@@ -30,3 +30,12 @@ Environment: macOS arm64; OpenJDK 17.0.17; Gradle 8.10.2; Android Gradle Plugin 
 The service discovery delay, local GATT service registration and actual Android write callback behavior compile but require device testing. Background operation, OS permission flows, OEM battery management and visual UI layout have not been exercised on a device.
 
 See [the hardware checklist](HARDWARE_VALIDATION.md). Source and APK are an experimental starter, not a hardware-validated navigation product.
+
+## Verified publication
+
+The starter was committed and pushed to the existing public repository on 25 October 2026:
+[1aba541a55cdd803de13e80bd860c5f6cd414c8e](https://github.com/spandan-kumar/OpenTripper/commit/1aba541a55cdd803de13e80bd860c5f6cd414c8e).
+`git ls-remote origin refs/heads/main` returned that exact SHA after the push, matching local
+`HEAD`; the working tree was clean. A subsequent documentation commit records this evidence.
+
+Rebuilt debug APK SHA-256: `43c4f55174950464c344c4b7e2e4470ef96e0a6d99b605b5d52525c3a072f0b4`.

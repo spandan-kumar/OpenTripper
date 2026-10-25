@@ -14,7 +14,12 @@ be distinguished from an installation/token mismatch from these responses alone.
 The local GitHub CLI is independently authenticated as `spandan-kumar`, has the `repo` scope,
 and reports push permission on this repository. This client is used for publishing rather
 than the blocked integration. No tokens are copied into project files or remote URLs.
-The actual publication result is recorded in [validation](VALIDATION.md).
+The first Git push exposed a global URL rewrite that routed GitHub HTTPS URLs through
+an SSH work-account alias; GitHub rejected that attempt as `spandan-appointy`. This
+repository now uses an HTTPS remote with the explicit `spandan-kumar` username and a
+repository-local GitHub CLI credential helper. Global Git settings were left unchanged.
+The push then succeeded, and the remote `main` SHA matched the local commit.
+The publication evidence is recorded in [validation](VALIDATION.md).
 
 To repair the integration itself, inspect its [GitHub App installation](https://github.com/settings/installations):
 ensure OpenTripper is selected and the App has **Contents: Read and write**. If the provider
