@@ -1,4 +1,4 @@
-# OpenTripper 0.2 — maneuver clarity and Pod testing
+# OpenTripper 0.3 — guided Pod tests with photos
 
 Repository: [spandan-kumar/OpenTripper](https://github.com/spandan-kumar/OpenTripper).
 Local workspace: `/Users/Spandan/github.com/spandan-kumar/OpenTripper`.
@@ -9,6 +9,8 @@ A Kotlin Android app for the Royal Enfield **Tripper Pod** advertising as `RE_DI
 
 ## What is implemented
 
+- One-button stationary guided test: scan, select a unique or previously verified Pod, connect, transmit seven screen tests and pause for a photo at each checkpoint. First-time PIN entry remains manual.
+- In-app camera preview and permission request, photo review/retake, explicit skip, bounded test timeouts, partial reports and ZIP sharing with the photos.
 - BLE scan and explicit device selection, Android runtime permissions, foreground connection service and Stop notification action.
 - Outbound GATT client and inbound local GATT server using the Pod UART UUIDs; no BLE advertising or notification subscription.
 - Exactly 20-byte frames, CRC-16/CCITT-FALSE, PIN entry, user-verified device resume, 24-hour clock sync.
@@ -45,6 +47,20 @@ Use **Import OSRM JSON** to open an OSRM route response exported with `steps=tru
 
 The bundled example is not a real road route. A separate real OSRM response from the documented Berlin example coordinates is checked into `core/src/test/resources/osrm-berlin-capture.json` as an importer regression fixture. Routing data attribution: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright).
 
+## Automatic test with photo checkpoints
+
+Park the Hunter and turn on the ignition. Open **Start automatic Pod test**. Android asks for camera and Bluetooth access directly in the app (and optionally notification permission for its connection notification). Camera access can also be granted and checked through **Guided test, camera & reports → Check camera / allow camera permission**, without a Pod.
+
+The app scans for up to 30 seconds. It automatically uses your previously verified Pod, or waits briefly and connects to the only Pod found. If multiple Pods are found, choose yours. Enter the PIN shown on the Pod when requested. Android write callbacks do **not** prove that the firmware accepted the PIN.
+
+For each screen, the app waits for a successful write and a three-second settling period, then vibrates and asks **Photograph the Pod now**. Open the camera, take a photo, check it is readable and tap **Use photo & next test**. Retake leaves the same maneuver active. **Skip this photo** explicitly records missing evidence. Standard checkpoints cover ordinary left/right, sharp/slight left, fork left, exit left with a following right arrow, and a U-turn. Enable experimental tests before starting to add roundabout exits 1–3 and near-turn emphasis (11 checkpoints total).
+
+A photo wait expires after two minutes; the whole run is capped at ten minutes. Disconnects, write failures and cancellation stop the run and preserve its partial report. Keep the app open for the guided prompts. After process death, the saved run is marked interrupted rather than silently resumed. The service keeps refreshing the current screen while the camera is open. Maps forwarding stays paused after testing.
+
+At the end, tap **Share test report and photos** to choose where to send a ZIP. Its `report.json` links each checkpoint to a JPEG at the ZIP root, with intended maneuver, traffic side, packet bytes, successful-write count, skipped photos and failure reason. Photos/report stay in app-private storage until you choose Share; no gallery permission or upload is used. Practice camera-check photos are deleted when the camera screen closes. Only the latest saved run is exposed by the current UI. Clearing app data/uninstalling deletes unshared evidence.
+
+This run collects evidence; it does not automatically recognize or grade the Pod's arrows. Physical Pod tests are still required before treating any experimental icon as supported.
+
 ## Try on hardware
 
 1. Install the debug APK, grant Bluetooth permissions and enable Bluetooth. On Android 8–11 also grant location and enable the phone's location setting for BLE scanning. On Android 13+ allow notifications to see the foreground control notification.
@@ -67,7 +83,7 @@ See [research and gap decisions](docs/RESEARCH.md) for why these are the first i
 
 Google Maps does not provide a stable public notification schema for this integration. No icon-image interpretation, guessed roundabout exits, ETA inference, localized instruction parsing, live GPS route following, route calculation, radar, GPS compass or Tripper Dash support is implemented. Multiple navigation notifications, OEM background restrictions and notification text privacy/redaction still need phone testing.
 
-Notification access is granted broadly by Android. The listener immediately filters for `com.google.android.apps.maps`. It retains only parsed maneuver/distance while the service is active, and a small in-memory status log. Nothing is uploaded; the manifest has no Internet permission. Raw PIN/reply payloads and notification text are not logged. Android preferences store the manually verified Pod address, forwarding choice, fallback traffic side, optional firmware label and user-entered lab observations. Imported routes stay in memory; the app does not retain a route history. An exported observation report includes phone model, Android version, navigation test packets and your notes, but no PIN, Pod address, notification contents or route coordinates. App backup is disabled.
+Notification access is granted broadly by Android. The listener immediately filters for `com.google.android.apps.maps`. It retains only parsed maneuver/distance while the service is active, and a small in-memory status log. Nothing is uploaded; the manifest has no Internet permission. Raw PIN/reply payloads and notification text are not logged. Android preferences store the manually verified Pod address, forwarding choice, fallback traffic side, optional firmware label and user-entered lab observations. Imported routes stay in memory; the app does not retain a route history. An exported observation report includes phone model, Android version, navigation test packets and your notes, but no PIN, Pod address, notification contents or route coordinates. Guided runs also save app-private photos and structured test evidence; shared ZIPs are cached for Android sharing. Camera photos have no app-supplied GPS location. App backup is disabled.
 
 If screen forwarding stops, generic pings do not preserve the Pod's screen watchdog. Upstream reports the Pod may drop its link about five seconds after the last screen. The app intentionally does not invent a return-to-clock command; reconnect manually after the Pod drops, or cycle ignition if needed.
 

@@ -4,6 +4,7 @@ import io.opentripper.core.MapsManeuver
 import io.opentripper.core.MapsNotification
 import io.opentripper.core.PodProbe
 import io.opentripper.core.PodSession
+import io.opentripper.core.GuidedRun
 
 /** In-process UI state, accessed on main looper only. No notification contents go to disk or network. */
 object AppState {
@@ -16,6 +17,9 @@ object AppState {
     var completedProbe: PodProbe? = null
     var completedProbeAt: String? = null
     var roundaboutsAllowed = false
+    var guidedRun: GuidedRun? = null
+    var guidedRunId: String? = null
+    var guidedChoosingPod = false
     var requestMapsSnapshot: (() -> Unit)? = null
     var onMapsPost: ((MapsNotification) -> Unit)? = null
     var onMapsRemove: ((String) -> Unit)? = null

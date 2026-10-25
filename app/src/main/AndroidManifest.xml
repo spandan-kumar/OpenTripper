@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="30" />
@@ -18,6 +23,12 @@
             </intent-filter>
         </activity>
         <activity android:name=".ManeuverLabActivity" android:exported="false" />
+        <activity android:name=".GuidedTestActivity" android:exported="false" />
+        <activity android:name=".PodCameraActivity" android:exported="false" />
+        <provider android:name="androidx.core.content.FileProvider" android:authorities="io.opentripper.reports"
+            android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/report_paths" />
+        </provider>
         <service android:name=".PodService" android:exported="false" android:foregroundServiceType="connectedDevice" />
         <service android:name=".MapsObserver" android:label="OpenTripper experimental Maps observer"
             android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">

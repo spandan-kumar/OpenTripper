@@ -1,4 +1,46 @@
-# OpenTripper 0.2 validation — 25 October 2026
+# OpenTripper 0.3 validation — 25 October 2026
+
+Workspace: `/Users/Spandan/github.com/spandan-kumar/OpenTripper`.
+
+## Build and automated checks
+
+`./gradlew :core:test :app:assembleDebug :app:lintDebug --console=plain` passed with JDK 17 and Android SDK 35. Gradle/AGP/Kotlin pins are unchanged. The camera uses pinned CameraX 1.4.2, Activity 1.9.3, Core 1.13.1 and ExifInterface 1.3.7; AndroidX is enabled.
+
+- **54 JVM tests passed**, zero failures/errors/skips. The original 47 tests remain passing.
+- Seven new guided-run tests cover exact write confirmation, settling before the photo prompt, repeated screen writes while waiting, photo/step association, stale-result rejection, explicit skips, completion, cancellation, write/photo/global timeouts and experimental/traffic-side plans.
+- Android lint: **0 errors, 43 warnings**. Warnings concern English strings, pinned dependency versions, target API and compatibility manifest declarations; no lint baseline suppresses findings.
+- Debug APK v2 signature verification passed. Package `io.opentripper`, version `0.3.0-experimental`, version code 3, min API 26, target API 35. Camera and bounded wake-lock permissions are declared. There is no Internet or shared-storage permission.
+
+Final APK SHA-256:
+
+`a81c57c41d55888c181baa4ac29751822ddc2f7e4c1dc8e015424cdff2993384`
+
+## Actual Pixel 8 checks
+
+Phone: Pixel 8, Android 17 / API 37, connected over wireless ADB. The final APK was installed, pulled back from the phone, and its SHA-256 matched the build and delivered APK above. Camera capture and practice-photo deletion were rechecked on that final build. No OpenTripper runtime crash appeared in the inspected AndroidRuntime log. These checks used the actual app UI:
+
+- Opened the guided-test screen through the new main-screen button.
+- Opened **Check camera / allow camera permission**. Android displayed the camera permission dialog directly over OpenTripper.
+- Denied camera access: capture stayed disabled and an in-app **Allow camera** button was available. Requested again and granted access while using the app.
+- Opened the rear-camera preview, captured a JPEG, reached review, retook it and finished the camera check. Verified that the practice JPEG was deleted from app-private cache on leaving.
+- Started an automatic test from the main screen. Bluetooth permission was granted during the flow; the scan started without requiring the old manual connection sequence.
+- Cancelled during discovery. The app showed a saved partial report, allowed sharing and stopped its foreground service. Android's service listing confirmed no OpenTripper service remained.
+- Opened Android's share sheet with a generated ZIP. Dismissed it without sending to anyone. Read the cached ZIP back: valid `report.json`, phase `CANCELLED`, seven planned checkpoints, zero successful writes, zero photos and no fabricated visual observations.
+- Ran discovery without a Pod present. It stopped after the bounded scan with **No Pod found**, enabled another run and sharing, and shut down its service.
+
+Camera-check photos were practice captures, not photographs of a connected Pod. No practice photo is included in hardware evidence. Saved test reports contain no PIN or Pod address. ZIPs are exposed only through a non-exported FileProvider with a temporary read grant when the user chooses Share.
+
+## Remaining hardware checks
+
+No physical Pod was connected. Automatic Pod selection, pairing/resume, actual screen refresh during camera capture, physical graphics, reverse GATT replies and accepting a real checkpoint photo into a completed hardware-run ZIP still require the user's Hunter. Successful write callbacks are transmission evidence, not a visual or PIN-acceptance verdict. Older Android versions and multiple-Pod selection have not been exercised on devices.
+
+The guided runner times out individual photo waits after two minutes and the whole run after ten minutes. App-process death preserves a report marked interrupted; the run is not restored. The user explicitly captures/reviews each photo; no automatic image recognition is implemented. Experimental roundabouts and approach emphasis remain opt-in. Live GPS route following is still not implemented.
+
+## Previous milestone
+
+The section below preserves the verified 0.2 evidence. Its APK hash and test counts refer to that earlier version.
+
+# Previous milestone: OpenTripper 0.2 validation — 25 October 2026
 
 Local workspace: `/Users/Spandan/github.com/spandan-kumar/OpenTripper`.
 

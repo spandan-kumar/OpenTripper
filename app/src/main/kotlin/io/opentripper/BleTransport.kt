@@ -20,6 +20,8 @@ class BleTransport(private val context: Context, private val listener: Listener)
         fun onWriteComplete(success: Boolean)
         fun onFailure(reason: String)
         fun onEvent(message: String)
+        fun onDeviceFound(address: String) {}
+        fun onScanFinished() {}
     }
     private val handler = Handler(Looper.getMainLooper())
     private val manager = context.getSystemService(BluetoothManager::class.java)
@@ -37,7 +39,7 @@ class BleTransport(private val context: Context, private val listener: Listener)
     private val serviceUuid = UUID.fromString(TripperProtocol.SERVICE)
     private val characteristicUuid = UUID.fromString(TripperProtocol.CHARACTERISTIC)
 
-    fun scan() {
+    fun scan(durationMillis: Long = 15_000) {
         close()
         if (!checkAvailable()) return
         val token = generation
@@ -48,8 +50,10 @@ class BleTransport(private val context: Context, private val listener: Listener)
                     if (generation != token) return@onMain
                     // Use the advertisement name; the Pod may omit its service UUID in advertisements.
                     if (result.scanRecord?.deviceName == TripperProtocol.DEVICE_NAME) {
+                        val isNew = !found.containsKey(result.device.address)
                         found[result.device.address] = TripperProtocol.DEVICE_NAME
                         AppState.devices(found.map { it.key to it.value })
+                        if (isNew) listener.onDeviceFound(result.device.address)
                     }
                 }
             }
@@ -61,10 +65,13 @@ class BleTransport(private val context: Context, private val listener: Listener)
         scanner = adapter?.bluetoothLeScanner
         if (scanner == null) return fail("BLE scanner unavailable")
         scanner?.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), callback)
-        listener.onEvent("Scanning for RE_DISP for 15 seconds; turn ignition on now")
+        listener.onEvent("Scanning for RE_DISP; turn ignition on now")
         handler.postDelayed({
-            if (generation == token) { stopScan(); listener.onEvent("Scan finished; select a Pod, or cycle ignition and scan again") }
-        }, 15_000)
+            if (generation == token) {
+                stopScan(); listener.onScanFinished()
+                if (generation == token) listener.onEvent("Scan finished; select a Pod, or cycle ignition and scan again")
+            }
+        }, durationMillis.coerceIn(5000, 30_000))
     }
 
     fun connect(target: String) {

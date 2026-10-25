@@ -9,8 +9,8 @@ android {
         applicationId = "io.opentripper"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0-experimental"
+        versionCode = 3
+        versionName = "0.3.0-experimental"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -18,4 +18,12 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
 }
-dependencies { implementation(project(":core")) }
+dependencies {
+    implementation(project(":core"))
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
+    implementation("androidx.activity:activity:1.9.3")
+    implementation("androidx.core:core:1.13.1")
+    implementation("androidx.camera:camera-camera2:1.4.2")
+    implementation("androidx.camera:camera-lifecycle:1.4.2")
+    implementation("androidx.camera:camera-view:1.4.2")
+}

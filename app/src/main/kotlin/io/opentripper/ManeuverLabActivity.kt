@@ -262,7 +262,7 @@ class ManeuverLabActivity : Activity() {
         val all = readObservations()
         val rows = JSONArray()
         all.keys().forEach { rows.put(all.getJSONObject(it)) }
-        return JSONObject().put("schemaVersion", 1).put("appVersion", "0.2.0-experimental")
+        return JSONObject().put("schemaVersion", 1).put("appVersion", "0.3.0-experimental")
             .put("exportedAt", Instant.now().toString()).put("phoneModel", Build.MODEL)
             .put("androidApi", Build.VERSION.SDK_INT).put("evidence", "User-reported visual observations; not automatic hardware verification")
             .put("observations", rows).toString(2)

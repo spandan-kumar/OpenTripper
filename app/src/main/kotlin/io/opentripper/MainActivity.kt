@@ -42,6 +42,8 @@ class MainActivity : Activity() {
         text("OpenTripper", 30f)
         text("Experimental • Royal Enfield Tripper Pod (RE_DISP). Tripper Dash is unsupported.")
         status = text("Stopped", 19f)
+        button("Start automatic Pod test") { startActivity(Intent(this, GuidedTestActivity::class.java).putExtra("start", true)) }
+        button("Guided test, camera & reports") { startActivity(Intent(this, GuidedTestActivity::class.java)) }
         button("Maneuver lab & route preview") { startActivity(Intent(this, ManeuverLabActivity::class.java)) }
         button("Grant Bluetooth permissions") { requestBluetoothPermissions() }
         button("Enable Bluetooth") {
