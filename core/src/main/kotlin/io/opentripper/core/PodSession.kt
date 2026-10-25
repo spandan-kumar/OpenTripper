@@ -6,7 +6,8 @@ class PodSession(
     private val clockPacket: () -> ByteArray,
     private val write: (ByteArray) -> Unit,
     private val changed: (State) -> Unit,
-    private val failed: (String) -> Unit
+    private val failed: (String) -> Unit,
+    private val written: (ByteArray) -> Unit = {}
 ) {
     enum class State { STOPPED, WAITING_PIN, HANDSHAKE, READY, FAILED }
     private data class Step(val bytes: ByteArray, val pauseAfter: Long = 0)
@@ -61,6 +62,7 @@ class PodSession(
         pending = null
         if (!success) return fail("GATT write failed")
         earliest = now() + step.pauseAfter
+        written(step.bytes.copyOf())
         tick()
     }
 

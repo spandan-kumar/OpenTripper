@@ -84,4 +84,14 @@ class PodSessionTest {
         r.session.updateScreen(null); r.advance(2000)
         assertArrayEquals(TripperProtocol.ping(), r.sent.last())
     }
+    @Test fun successfulWritesAreReportedOnlyAfterCallbackAndNeverOnFailure() {
+        val completed = mutableListOf<ByteArray>()
+        val session = PodSession({ 0 }, { TripperProtocol.time(12, 0) }, {}, {}, {}, { completed.add(it) })
+        session.start(false)
+        assertTrue(completed.isEmpty())
+        session.onWriteComplete(true)
+        assertArrayEquals(TripperProtocol.handshake(false), completed.single())
+        session.submitPin("123456"); session.onWriteComplete(false)
+        assertEquals(1, completed.size)
+    }
 }

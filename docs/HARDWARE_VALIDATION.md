@@ -1,6 +1,6 @@
 # Required hardware and phone checks
 
-These checks have **not** been run. Passing JVM tests or building an APK does not complete them. Test stationary, with an ignition-powered Tripper Pod and an Android BLE-capable phone.
+The Pod-specific checks below have **not** been run. Phone UI checks are recorded separately in VALIDATION.md. Passing JVM tests or building an APK does not complete them. Test stationary, with an ignition-powered Tripper Pod and an Android BLE-capable phone.
 
 - Identify exact Pod model/firmware; confirm this is a Tripper Pod, not Dash.
 - Confirm `RE_DISP` scan window and UART service/characteristic properties. Check phones on Android 8–11 and 12–15, including permission refusal/revocation, Bluetooth off/on and location settings on older versions.
@@ -14,4 +14,6 @@ These checks have **not** been run. Passing JVM tests or building an APK does no
 - Verify notification removal, same-key unsupported text, fifteen seconds without updates, and listener access revocation stop instruction refresh. Confirm the Pod's resulting screen watchdog drop, then manually reconnect to the clock.
 - Leave navigation active with the screen locked and app backgrounded; check Android/OEM battery policy, foreground service survival, Stop, and process kill. Process death requires manually restarting the connection.
 
-Missing capabilities: automatic reconnection, background process restoration, traffic/ETA/radar, roundabout exits, localized parsing and full riding validation. No on-road validation was performed.
+Use the maneuver lab to test left/right, sharp/slight, keep, fork, merge, on-ramp, off-ramp, U-turn and destination separately. Test roundabout exits 1–9 for the actual traffic side only after enabling experimental icon tests. Compare the following-maneuver small arrow independently. Record Matches/Different/Blank with the Pod firmware if known and export the observation report. Check optional approach emphasis at 100, 95, 70, 45, 20 and 10 metres. A simulator preview does not establish what the real firmware draws.
+
+Missing capabilities: automatic reconnection, background process restoration, traffic/ETA/radar, live GPS route following/rerouting, localized parsing and full riding validation. No on-road validation was performed.

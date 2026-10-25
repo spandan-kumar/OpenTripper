@@ -1,41 +1,54 @@
-# Local validation — 25 October 2026
+# OpenTripper 0.2 validation — 25 October 2026
 
-The existing project was moved to `/Users/Spandan/github.com/spandan-kumar/OpenTripper`. The connected integration still returns HTTP 403, `Resource not accessible by integration`; the independently authenticated local GitHub client is used to publish. See [GitHub access](GITHUB_ACCESS.md) for the permission diagnosis.
+Local workspace: `/Users/Spandan/github.com/spandan-kumar/OpenTripper`.
 
-## Successful local checks
+## Build and automated checks
 
-Command, run from the new workspace: `./gradlew :core:test :app:assembleDebug :app:lintDebug --console=plain`, with JDK 17 and `ANDROID_HOME` set to the installed SDK. The project wrapper downloaded and checksum-verified Gradle 8.10.2. Result: **BUILD SUCCESSFUL**, 48 tasks executed; no tasks were reused from the old project location.
+Command: `./gradlew :core:test :app:assembleDebug :app:lintDebug --console=plain`, with JDK 17 and ANDROID_HOME set. A clean build was also performed during this change to remove incremental metadata referencing the project's old location. The final build completed successfully.
 
-Environment: macOS arm64; OpenJDK 17.0.17; Gradle 8.10.2; Android Gradle Plugin 8.7.3; Kotlin 2.0.21; Android SDK platform 35 and Build Tools 34.0.0.
+Environment: macOS arm64, OpenJDK 17.0.17, Gradle wrapper 8.10.2, Android Gradle Plugin 8.7.3, Kotlin 2.0.21, Android SDK platform 35 and Build Tools 34.0.0. Dependencies are pinned; these are not claims of latest versions.
 
-- Android Kotlin sources compiled and debug APK assembled.
-- 26 JVM tests passed; zero failures, errors or skipped tests.
-- Android lint completed: zero errors, seven warnings (API 35 target, a newer manifest attribute ignored on old Android versions, legacy backup declaration guidance, and four English UI/localization warnings). These are retained explicitly, not hidden with a lint baseline.
-- Gradle wrapper JAR SHA-256 matched Gradle's published checksum: `2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046`.
-- Gradle distribution SHA-256 is pinned in wrapper properties: `31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26`.
-- Debug APK signature verification passed. Manifest minimum SDK is 26, target is 35; Internet permission is absent.
+- 47 JVM tests passed; no failures, errors or skipped tests.
+- Android lint: 0 errors, 25 warnings. Warnings cover the older target API, backward-compatible manifest declarations and English/localization strings. No lint baseline suppresses them.
+- Debug APK signature verification passed (v2 signature).
+- Manifest: package `io.opentripper`, version `0.2.0-experimental`, version code 2, minimum SDK 26, target SDK 35. No Internet permission.
+- Gradle wrapper JAR SHA-256: `2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046`.
+- Gradle distribution checksum remains pinned in wrapper properties.
 
-## Test suites
+| Suite | Tests | Failures | Errors | Skipped |
+|---|---:|---:|---:|---:|
+| ManeuverCueTest | 7 | 0 | 0 | 0 |
+| MapsParserTest | 13 | 0 | 0 | 0 |
+| OsrmRouteTest | 9 | 0 | 0 | 0 |
+| PodSessionTest | 10 | 0 | 0 | 0 |
+| TripperProtocolTest | 8 | 0 | 0 | 0 |
 
-| Suite | Tests | Failures | Errors |
-|---|---:|---:|---:|
-| MapsParserTest | 9 | 0 | 0 |
-| PodSessionTest | 9 | 0 | 0 |
-| TripperProtocolTest | 8 | 0 | 0 |
+Coverage includes fixed protocol vectors and CRC corruption, angle/fork/ramp distinctions, small following-maneuver icons, traffic-side U-turns, roundabout exit families and invalid-exit rejection, opt-in approach intensity, session timing/failures, successful-write reporting, notification freshness, OSRM validation and a captured real OSRM response.
 
-## What was not validated
+## Actual phone checks
 
-`adb devices -l` showed no attached devices. No Android phone, emulator or Tripper hardware runtime test was run. Automated notification fixtures are synthetic examples, not captures from an installed Google Maps version. Initial PIN acceptance and reverse GATT replies remain unverified; the app reports READY provisionally and requires manual visual verification before saving a Pod address. The published packet vectors and CRC were validated in software only.
+A connected **Pixel 8 running Android 17 / API 37** was available for this milestone. The app was installed successfully. The final installed base APK's SHA-256 matched the build artifact exactly:
 
-The service discovery delay, local GATT service registration and actual Android write callback behavior compile but require device testing. Background operation, OS permission flows, OEM battery management and visual UI layout have not been exercised on a device.
+`c036b9013b8cf2352378c7638fa280af0d6e06cba57257a838988b1dd60a686f`
 
-See [the hardware checklist](HARDWARE_VALIDATION.md). Source and APK are an experimental starter, not a hardware-validated navigation product.
+The following were exercised on the phone using the actual app UI:
 
-## Verified publication
+- Main screen and maneuver lab launch without crashes; preview does not require granting Bluetooth permission.
+- Bundled synthetic route shows **Roundabout · exit 3**, left-hand traffic, and following **Sharp left**; the phone schematic is explicitly labeled as requiring a physical Pod check.
+- The deliberately unsupported ninth route step remains unsupported. The send button is disabled while disconnected.
+- The actual captured OSRM response was copied into Downloads and selected through Android's document picker. The app imported four steps and preserved the response's right-hand traffic.
+- The observation buttons were disabled before any completed Bluetooth test write.
+- The report was exported through Android's document picker and read back as valid schema-version-1 JSON. It contained **zero observations**; no hardware results were fabricated.
+- The final APK was reinstalled and the roundabout preview rechecked after the last UI/theme changes. A screenshot is provided with the deliverables.
 
-The starter was committed and pushed to the existing public repository on 25 October 2026:
-[1aba541a55cdd803de13e80bd860c5f6cd414c8e](https://github.com/spandan-kumar/OpenTripper/commit/1aba541a55cdd803de13e80bd860c5f6cd414c8e).
-`git ls-remote origin refs/heads/main` returned that exact SHA after the push, matching local
-`HEAD`; the working tree was clean. A subsequent documentation commit records this evidence.
+## What still requires the user's Hunter
 
-Rebuilt debug APK SHA-256: `43c4f55174950464c344c4b7e2e4470ef96e0a6d99b605b5d52525c3a072f0b4`.
+No Pod was connected during this validation. Actual pairing, PIN acceptance, reverse GATT traffic, displayed graphics, distance/fill behavior, following-maneuver visibility and the test's real firmware effect remain unverified. The 20-second test's hardware behavior and successful visual-observation recording require a connected Pod. A write callback confirms Android's transmission result, not the correctness of what the Pod drew.
+
+The new OSRM feature is **manual route rehearsal/import**, not live GPS navigation. The app does not calculate routes, track route progress or reroute. Maps notification fixtures remain synthetic English examples; notification forwarding and background reliability still need real app/device/Pod checks.
+
+Use [the hardware checklist](HARDWARE_VALIDATION.md) and the lab's Matches/Different/Blank observations to establish which icons the user's firmware actually supports. Experimental roundabout codes, especially the left-hand-traffic range, must not be treated as established hardware behavior.
+
+## Repository history
+
+The recovered 0.1 starter was published as [1aba541](https://github.com/spandan-kumar/OpenTripper/commit/1aba541a55cdd803de13e80bd860c5f6cd414c8e), followed by [c0e4060](https://github.com/spandan-kumar/OpenTripper/commit/c0e406057e728a39665bf97a82707500ed190ee8) recording publication. This document describes the subsequent 0.2 upgrade; its commit is identified in Git history and the delivery message. Publication is checked by comparing local HEAD against remote main before reporting success.

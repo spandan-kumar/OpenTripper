@@ -17,6 +17,9 @@ class MainActivity : Activity() {
     private lateinit var events: TextView
     private lateinit var devices: LinearLayout
     private lateinit var pin: EditText
+    private lateinit var forwardingToggle: Switch
+    private lateinit var roundaboutToggle: Switch
+    private var updating = false
     private var renderedDevices: List<Pair<String, String>>? = null
     private val redraw: () -> Unit = { render() }
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +42,7 @@ class MainActivity : Activity() {
         text("OpenTripper", 30f)
         text("Experimental • Royal Enfield Tripper Pod (RE_DISP). Tripper Dash is unsupported.")
         status = text("Stopped", 19f)
+        button("Maneuver lab & route preview") { startActivity(Intent(this, ManeuverLabActivity::class.java)) }
         button("Grant Bluetooth permissions") { requestBluetoothPermissions() }
         button("Enable Bluetooth") {
             if (Build.VERSION.SDK_INT >= 31 && checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
@@ -63,10 +67,16 @@ class MainActivity : Activity() {
         button("Open notification access settings") { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
         button("Start Maps preview") { command("PREVIEW") }
         navigation = text("No recognized maneuver")
-        Switch(this).apply {
+        forwardingToggle = Switch(this).apply {
             text = "Forward experimental Maps maneuvers"
             isChecked = getSharedPreferences("pod", MODE_PRIVATE).getBoolean("forwarding", false)
-            setOnCheckedChangeListener { _, enabled -> command("FORWARD") { putExtra("enabled", enabled) } }
+            setOnCheckedChangeListener { _, enabled -> if (!updating) command("FORWARD") { putExtra("enabled", enabled) } }
+            content.addView(this)
+        }
+        roundaboutToggle = Switch(this).apply {
+            text = "Allow experimental roundabout icons this session"
+            isChecked = AppState.roundaboutsAllowed
+            setOnCheckedChangeListener { _, enabled -> if (!updating) command("ROUNDABOUTS") { putExtra("enabled", enabled) } }
             content.addView(this)
         }
         button("Stop connection") { command("STOP") }
@@ -77,7 +87,12 @@ class MainActivity : Activity() {
     private fun render() {
         status.text = AppState.status
         navigation.text = (if (AppState.observerConnected) "Observer connected. " else "Observer disconnected. ") +
-            (AppState.navigation?.let { "${it.maneuver.name.replace('_', ' ')} in ${it.meters} m" } ?: "No recognized maneuver")
+            (AppState.navigation?.let { "${it.cue(io.opentripper.core.DrivingSide.LEFT).label} in ${it.meters} m" }
+                ?: "No recognized maneuver; unsupported text never guesses an arrow") + "\n" + AppState.screenMessage
+        updating = true
+        forwardingToggle.isChecked = getSharedPreferences("pod", MODE_PRIVATE).getBoolean("forwarding", false)
+        roundaboutToggle.isChecked = AppState.roundaboutsAllowed
+        updating = false
         events.text = AppState.eventText()
         if (renderedDevices != AppState.devices) {
             renderedDevices = AppState.devices.toList(); devices.removeAllViews()

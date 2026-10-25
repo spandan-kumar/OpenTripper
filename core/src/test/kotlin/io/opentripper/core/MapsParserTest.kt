@@ -18,7 +18,36 @@ class MapsParserTest {
     @Test fun sharpSlightAndKeepAreNotCollapsedIntoGenericTurn() {
         assertEquals(Maneuver.SHARP_RIGHT, MapsParser.parse(note("100 m", "Turn sharp right"))?.maneuver)
         assertEquals(Maneuver.SLIGHT_LEFT, MapsParser.parse(note("100 m", "Slight left onto A Road"))?.maneuver)
-        assertEquals(Maneuver.KEEP_RIGHT, MapsParser.parse(note("100 m", "Keep right at the fork"))?.maneuver)
+        assertEquals(Maneuver.FORK_RIGHT, MapsParser.parse(note("100 m", "Keep right at the fork"))?.maneuver)
+    }
+    @Test fun roundaboutsRequireAnExplicitExitRatherThanCollapsingIntoATurn() {
+        for (text in listOf("At the roundabout, take the 3rd exit", "Enter the roundabout and take the third exit",
+            "Take the 3rd exit at the roundabout")) {
+            val result = MapsParser.parse(note("100 m", text))!!
+            assertEquals(Maneuver.ROUNDABOUT, result.maneuver)
+            assertEquals(3, result.roundaboutExit)
+            assertEquals(0x0d, result.cue(DrivingSide.LEFT).icon())
+        }
+        for (text in listOf("At the roundabout turn left", "At the roundabout take the 10th exit",
+            "At the roundabout take the 1st exit then take the 2nd exit")) {
+            assertNull(MapsParser.parse(note("100 m", text)))
+        }
+    }
+    @Test fun rampsExitsAndMergesRetainTheirOwnManeuverTypes() {
+        assertEquals(Maneuver.ON_RAMP_RIGHT, MapsParser.parse(note("100 m", "Take the ramp on the right"))?.maneuver)
+        assertEquals(Maneuver.OFF_RAMP_LEFT, MapsParser.parse(note("100 m", "Take the exit on the left"))?.maneuver)
+        assertEquals(Maneuver.MERGE_RIGHT, MapsParser.parse(note("100 m", "Merge right"))?.maneuver)
+        assertNull(MapsParser.parse(note("100 m", "Take the flyover"))) // No direction can be inferred.
+    }
+    @Test fun explicitRoundaboutExitTakesPriorityOverGenericNotificationTitle() {
+        val parsed = MapsParser.parse(note("100 m", "Turn left", "At the roundabout, take the third exit"))!!
+        assertEquals(Maneuver.ROUNDABOUT, parsed.maneuver)
+        assertEquals(3, parsed.roundaboutExit)
+    }
+    @Test fun vagueAndConflictingRoundaboutsNeverFallBackToOrdinaryTurns() {
+        assertNull(MapsParser.parse(note("100 m", "Turn left at the roundabout")))
+        assertNull(MapsParser.parse(note("100 m", "Turn left", "At the roundabout, turn left")))
+        assertNull(MapsParser.parse(note("100 m", "At the roundabout take the 1st exit", "At the roundabout take the 3rd exit")))
     }
     @Test fun rejectsOtherPackagesAndNonOngoingNotifications() {
         assertNull(MapsParser.parse(note("100 m", "Turn left", pkg = "com.example.fake")))

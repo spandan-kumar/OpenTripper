@@ -1,0 +1,531 @@
+{
+  "code": "Ok",
+  "routes": [
+    {
+      "legs": [
+        {
+          "steps": [
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "entry": [
+                    true
+                  ],
+                  "bearings": [
+                    354
+                  ],
+                  "location": [
+                    13.38882,
+                    52.517034
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [
+                    true,
+                    false,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    0,
+                    90,
+                    180,
+                    270
+                  ],
+                  "location": [
+                    13.3888,
+                    52.517147
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [
+                    true,
+                    true,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    0,
+                    90,
+                    180,
+                    270
+                  ],
+                  "location": [
+                    13.388642,
+                    52.518036
+                  ]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "mfp_Ic_vpAWBSBE?C@C?E?c@FsALC@M@K@C?aAJSBK@S@",
+              "maneuver": {
+                "bearing_after": 354,
+                "bearing_before": 0,
+                "location": [
+                  13.38882,
+                  52.517034
+                ],
+                "type": "depart"
+              },
+              "name": "Friedrichstra\u00dfe",
+              "mode": "driving",
+              "weight": 31.4,
+              "duration": 31.4,
+              "distance": 187.6
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [
+                    true,
+                    true,
+                    false,
+                    true,
+                    false
+                  ],
+                  "bearings": [
+                    30,
+                    90,
+                    180,
+                    270,
+                    330
+                  ],
+                  "location": [
+                    13.388525,
+                    52.51871
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [
+                    true,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    0,
+                    165,
+                    180
+                  ],
+                  "location": [
+                    13.388251,
+                    52.520424
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [
+                    true,
+                    false,
+                    false
+                  ],
+                  "bearings": [
+                    0,
+                    180,
+                    270
+                  ],
+                  "location": [
+                    13.38825,
+                    52.520432
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [
+                    true,
+                    true,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    0,
+                    45,
+                    180,
+                    225
+                  ],
+                  "location": [
+                    13.388021,
+                    52.521765
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [
+                    true,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    0,
+                    180,
+                    255
+                  ],
+                  "location": [
+                    13.387898,
+                    52.52245
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [
+                    true,
+                    true,
+                    false
+                  ],
+                  "bearings": [
+                    0,
+                    90,
+                    180
+                  ],
+                  "location": [
+                    13.387799,
+                    52.523401
+                  ]
+                },
+                {
+                  "lanes": [
+                    {
+                      "valid": false,
+                      "indications": [
+                        "none"
+                      ]
+                    },
+                    {
+                      "valid": false,
+                      "indications": [
+                        "left"
+                      ]
+                    },
+                    {
+                      "valid": true,
+                      "indications": [
+                        "straight"
+                      ]
+                    }
+                  ],
+                  "out": 0,
+                  "in": 1,
+                  "entry": [
+                    true,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    0,
+                    180,
+                    270
+                  ],
+                  "location": [
+                    13.387748,
+                    52.523877
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [
+                    true,
+                    true,
+                    false
+                  ],
+                  "bearings": [
+                    0,
+                    90,
+                    180
+                  ],
+                  "location": [
+                    13.3877,
+                    52.524433
+                  ]
+                },
+                {
+                  "out": 3,
+                  "in": 1,
+                  "entry": [
+                    true,
+                    false,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    105,
+                    165,
+                    300,
+                    345
+                  ],
+                  "location": [
+                    13.387337,
+                    52.526239
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [
+                    true,
+                    false,
+                    false,
+                    false
+                  ],
+                  "bearings": [
+                    0,
+                    105,
+                    165,
+                    255
+                  ],
+                  "location": [
+                    13.387283,
+                    52.526386
+                  ]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "}pp_Ii}upAOOG?I@A?_@DC?C?wBPC@C?C@QJI@mAJ??UBEH?@A?Q@G@E@U@m@FG@I@aBNG@k@FG@SBA?wALQB??M@K@aADc@@}@Fu@DC?C?a@B[@E?C?gAF}@JA?[Do@Fi@F_@BeALSBO@ODA@UDA?ODE@GBC?uBNE?OAKC",
+              "maneuver": {
+                "bearing_after": 33,
+                "bearing_before": 352,
+                "location": [
+                  13.388525,
+                  52.51871
+                ],
+                "modifier": "slight right",
+                "type": "continue"
+              },
+              "name": "Friedrichstra\u00dfe",
+              "mode": "driving",
+              "weight": 106.5,
+              "duration": 104.2,
+              "distance": 950.4
+            },
+            {
+              "intersections": [
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [
+                    true,
+                    false,
+                    true,
+                    true
+                  ],
+                  "bearings": [
+                    75,
+                    195,
+                    255,
+                    330
+                  ],
+                  "location": [
+                    13.387228,
+                    52.527168
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [
+                    true,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    75,
+                    255,
+                    345
+                  ],
+                  "location": [
+                    13.389147,
+                    52.527549
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [
+                    true,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    75,
+                    255,
+                    330
+                  ],
+                  "location": [
+                    13.391366,
+                    52.52802
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [
+                    true,
+                    true,
+                    false
+                  ],
+                  "bearings": [
+                    75,
+                    165,
+                    255
+                  ],
+                  "location": [
+                    13.39242,
+                    52.528232
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [
+                    true,
+                    true,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    75,
+                    120,
+                    255,
+                    330
+                  ],
+                  "location": [
+                    13.393814,
+                    52.528526
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 1,
+                  "entry": [
+                    true,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    75,
+                    255,
+                    345
+                  ],
+                  "location": [
+                    13.395724,
+                    52.528996
+                  ]
+                },
+                {
+                  "out": 0,
+                  "in": 2,
+                  "entry": [
+                    true,
+                    true,
+                    false,
+                    true
+                  ],
+                  "bearings": [
+                    90,
+                    180,
+                    255,
+                    345
+                  ],
+                  "location": [
+                    13.397565,
+                    52.529429
+                  ]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "yer_IeuupAE]AK[mCCSGi@E]Ge@E]Gg@UaBAKAOQqAG]E_@AMa@_DMeAS_BAMAAAMAMAEGg@AKOoAAECOKy@AMCQG[Gc@QkAKk@Ig@E_@g@yCKw@M{@[oBOaACMAKIq@?K",
+              "maneuver": {
+                "bearing_after": 71,
+                "bearing_before": 8,
+                "location": [
+                  13.387228,
+                  52.527168
+                ],
+                "modifier": "right",
+                "type": "turn"
+              },
+              "name": "Torstra\u00dfe",
+              "mode": "driving",
+              "weight": 124.8,
+              "duration": 124.8,
+              "distance": 750.1
+            },
+            {
+              "intersections": [
+                {
+                  "in": 0,
+                  "entry": [
+                    true
+                  ],
+                  "bearings": [
+                    264
+                  ],
+                  "location": [
+                    13.39763,
+                    52.529433
+                  ]
+                }
+              ],
+              "driving_side": "right",
+              "geometry": "}sr_IevwpA",
+              "maneuver": {
+                "bearing_after": 0,
+                "bearing_before": 84,
+                "location": [
+                  13.39763,
+                  52.529433
+                ],
+                "type": "arrive"
+              },
+              "name": "Torstra\u00dfe",
+              "mode": "driving",
+              "weight": 0,
+              "duration": 0,
+              "distance": 0
+            }
+          ],
+          "weight": 262.7,
+          "summary": "Friedrichstra\u00dfe, Torstra\u00dfe",
+          "duration": 260.4,
+          "distance": 1888
+        }
+      ],
+      "weight_name": "routability",
+      "weight": 262.7,
+      "duration": 260.4,
+      "distance": 1888
+    }
+  ],
+  "waypoints": [
+    {
+      "hint": "JAEKgDVmn4ULAAAAAwAAAAAAAAAPAAAAuFtKQYXNK0AAAAAAIMuBQQsAAAADAAAAAAAAAA8AAAD3KAEAFEzMAKpYIQM8TMwArVghAwAA3woAAAAA",
+      "location": [
+        13.38882,
+        52.517034
+      ],
+      "name": "Friedrichstra\u00dfe",
+      "distance": 2.73531597
+    },
+    {
+      "hint": "XmDfgQ6ikYcGAAAACQAAAAAAAABeAAAAz-ONQIv-tkAAAAAAeYZHQgYAAAAJAAAAAAAAAF4AAAD3KAEAfm7MABmJIQOCbswA_4ghAwAATwUAAAAA",
+      "location": [
+        13.39763,
+        52.529433
+      ],
+      "name": "Torstra\u00dfe",
+      "distance": 2.905919634
+    }
+  ]
+}

@@ -53,15 +53,31 @@ object TripperProtocol {
     }
 
     fun navigation(maneuver: Maneuver, meters: Int, night: Boolean = false): ByteArray {
+        return navigation(ManeuverCue(maneuver), meters, night = night)
+    }
+
+    fun navigation(cue: ManeuverCue, meters: Int, next: ManeuverCue? = null,
+        night: Boolean = false, approachEmphasis: Boolean = false): ByteArray {
         val d = distance(meters)
-        // Unknown next maneuver, radar and bottom line stay blank. No invented ETA.
-        return packet(0x10, 0x11, maneuver.icon, d[0], d[1], d[2], if (night) 1 else 0,
-            0xff, 0xff, 0xff, 0x41, 0xff, 0xff, 0xff)
+        // Approach intensity is documented but not hardware-verified; caller must opt in.
+        val intensity = if (!approachEmphasis) 0 else when {
+            meters <= 10 -> 0x50; meters <= 20 -> 0x40; meters <= 45 -> 0x30
+            meters <= 70 -> 0x20; meters <= 95 -> 0x10; else -> 0
+        }
+        return packet(0x10, 0x11, cue.icon(), d[0], d[1], d[2], intensity or (if (night) 1 else 0),
+            next?.icon(small = true) ?: 0xff, 0xff, 0xff, 0x41, 0xff, 0xff, 0xff)
     }
 }
 
-enum class Maneuver(val icon: Int) {
-    LEFT(0x14), RIGHT(0x15), SHARP_LEFT(0x16), SHARP_RIGHT(0x17),
-    SLIGHT_LEFT(0x18), SLIGHT_RIGHT(0x19), KEEP_LEFT(0x28), KEEP_RIGHT(0x27),
-    STRAIGHT(0x09), U_TURN(0x3d)
+enum class Maneuver(val icon: Int, val label: String) {
+    LEFT(0x14, "Turn left"), RIGHT(0x15, "Turn right"),
+    SHARP_LEFT(0x16, "Sharp left"), SHARP_RIGHT(0x17, "Sharp right"),
+    SLIGHT_LEFT(0x18, "Slight left"), SLIGHT_RIGHT(0x19, "Slight right"),
+    KEEP_LEFT(0x28, "Keep left"), KEEP_RIGHT(0x27, "Keep right"),
+    STRAIGHT(0x09, "Continue straight"), U_TURN(0x3d, "U-turn"),
+    FORK_LEFT(0x06, "Left at fork"), FORK_RIGHT(0x05, "Right at fork"),
+    MERGE_LEFT(0x04, "Merge left"), MERGE_RIGHT(0x03, "Merge right"), MERGE(0x1b, "Merge"),
+    ON_RAMP_LEFT(0x1e, "Enter ramp on left"), ON_RAMP_RIGHT(0x1d, "Enter ramp on right"),
+    OFF_RAMP_LEFT(0x2e, "Take exit on left"), OFF_RAMP_RIGHT(0x2d, "Take exit on right"),
+    ROUNDABOUT(0x0a, "Roundabout"), DEPART(0x3c, "Depart"), DESTINATION(0x00, "Destination")
 }

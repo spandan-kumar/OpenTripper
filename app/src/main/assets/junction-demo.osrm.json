@@ -1,0 +1,156 @@
+{
+  "code": "Ok",
+  "routes": [
+    {
+      "distance": 3250.0,
+      "duration": 600.0,
+      "legs": [
+        {
+          "steps": [
+            {
+              "name": "Start",
+              "distance": 325.0,
+              "duration": 60.0,
+              "driving_side": "left",
+              "maneuver": {
+                "type": "depart",
+                "modifier": "straight",
+                "location": [
+                  77.4,
+                  23.2
+                ]
+              }
+            },
+            {
+              "name": "Service road",
+              "distance": 325.0,
+              "duration": 60.0,
+              "driving_side": "left",
+              "maneuver": {
+                "type": "turn",
+                "modifier": "slight left",
+                "location": [
+                  77.4,
+                  23.2
+                ]
+              }
+            },
+            {
+              "name": "Flyover approach",
+              "distance": 325.0,
+              "duration": 60.0,
+              "driving_side": "left",
+              "maneuver": {
+                "type": "fork",
+                "modifier": "slight right",
+                "location": [
+                  77.4,
+                  23.2
+                ]
+              }
+            },
+            {
+              "name": "Elevated road",
+              "distance": 325.0,
+              "duration": 60.0,
+              "driving_side": "left",
+              "maneuver": {
+                "type": "on ramp",
+                "modifier": "right",
+                "location": [
+                  77.4,
+                  23.2
+                ]
+              }
+            },
+            {
+              "name": "Exit road",
+              "distance": 325.0,
+              "duration": 60.0,
+              "driving_side": "left",
+              "maneuver": {
+                "type": "off ramp",
+                "modifier": "left",
+                "location": [
+                  77.4,
+                  23.2
+                ]
+              }
+            },
+            {
+              "name": "Three-exit roundabout",
+              "distance": 325.0,
+              "duration": 60.0,
+              "driving_side": "left",
+              "maneuver": {
+                "type": "roundabout",
+                "modifier": "right",
+                "location": [
+                  77.4,
+                  23.2
+                ],
+                "exit": 3
+              }
+            },
+            {
+              "name": "Side street",
+              "distance": 325.0,
+              "duration": 60.0,
+              "driving_side": "left",
+              "maneuver": {
+                "type": "turn",
+                "modifier": "sharp left",
+                "location": [
+                  77.4,
+                  23.2
+                ]
+              }
+            },
+            {
+              "name": "Return road",
+              "distance": 325.0,
+              "duration": 60.0,
+              "driving_side": "left",
+              "maneuver": {
+                "type": "turn",
+                "modifier": "uturn",
+                "location": [
+                  77.4,
+                  23.2
+                ]
+              }
+            },
+            {
+              "name": "Unsupported junction",
+              "distance": 325.0,
+              "duration": 60.0,
+              "driving_side": "left",
+              "maneuver": {
+                "type": "mystery instruction",
+                "modifier": "left",
+                "location": [
+                  77.4,
+                  23.2
+                ]
+              }
+            },
+            {
+              "name": "Destination",
+              "distance": 325.0,
+              "duration": 60.0,
+              "driving_side": "left",
+              "maneuver": {
+                "type": "arrive",
+                "modifier": "right",
+                "location": [
+                  77.4,
+                  23.2
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

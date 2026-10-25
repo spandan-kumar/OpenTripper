@@ -15,6 +15,8 @@ class PodService : Service(), BleTransport.Listener {
     private var targetAddress: String? = null
     private val prefs by lazy { getSharedPreferences("pod", MODE_PRIVATE) }
     private var forwarding = false
+    private var probe: PodProbe? = null
+    private var probeUntil = 0L
     private val ticker = object : Runnable {
         override fun run() {
             try {
@@ -35,12 +37,21 @@ class PodService : Service(), BleTransport.Listener {
             { LocalTime.now().let { TripperProtocol.time(it.hour, it.minute) } },
             { bytes -> try { transport.write(bytes) } catch (_: SecurityException) { onFailure("Bluetooth permission was revoked") } },
             { state ->
+                AppState.sessionState = state
                 if (state != PodSession.State.STOPPED) AppState.status(when (state) {
                     PodSession.State.WAITING_PIN -> "Enter the PIN shown on the Pod"
                     PodSession.State.READY -> "Session ready — verify the Pod display before remembering it"
                     else -> "Pod: $state"
                 })
-            }, { reason -> onFailure(reason) })
+            }, { reason -> onFailure(reason) }, { bytes ->
+                probe?.let { test ->
+                    if (bytes.contentEquals(test.packet()) && AppState.completedProbe != test) {
+                        AppState.completedProbe = test
+                        AppState.completedProbeAt = java.time.Instant.now().toString()
+                        AppState.event("Test write completed. Check the Pod visually; Android cannot confirm its graphics.")
+                    }
+                }
+            })
         AppState.onMapsPost = { note -> route.post(note, SystemClock.elapsedRealtime()); refreshRoute() }
         AppState.onMapsRemove = { key -> route.remove(key); refreshRoute() }
         AppState.onMapsDisconnect = { route.clear(); refreshRoute() }
@@ -57,8 +68,9 @@ class PodService : Service(), BleTransport.Listener {
         try {
             startForegroundNotification()
             when (intent?.action) {
-                "SCAN" -> { session.stop(); targetAddress = null; AppState.status("Scanning for RE_DISP"); transport.scan() }
+                "SCAN" -> { clearProbe(clearEvidence = true); session.stop(); targetAddress = null; AppState.status("Scanning for RE_DISP"); transport.scan() }
                 "CONNECT" -> {
+                    clearProbe(clearEvidence = true)
                     session.stop()
                     val address = intent.getStringExtra("address") ?: return START_NOT_STICKY
                     targetAddress = address
@@ -74,34 +86,106 @@ class PodService : Service(), BleTransport.Listener {
                 }
                 "FORGET" -> { prefs.edit().remove("verified_address").apply(); AppState.event("Forgot saved Pod") }
                 "FORWARD" -> {
+                    clearProbe()
                     forwarding = intent.getBooleanExtra("enabled", false)
                     prefs.edit().putBoolean("forwarding", forwarding).apply()
                     refreshRoute()
                 }
                 "TIME" -> session.syncTime()
+                "ROUNDABOUTS" -> {
+                    AppState.roundaboutsAllowed = intent.getBooleanExtra("enabled", false)
+                    refreshRoute()
+                }
+                "PROBE" -> {
+                    if (session.state != PodSession.State.READY) {
+                        AppState.event("Connect and complete PIN entry before sending a screen test")
+                    } else try {
+                        val side = DrivingSide.valueOf(intent.getStringExtra("side") ?: "LEFT")
+                        val kind = Maneuver.valueOf(intent.getStringExtra("maneuver") ?: "")
+                        val nextKind = intent.getStringExtra("next")?.let(Maneuver::valueOf)
+                        val nextSide = DrivingSide.valueOf(intent.getStringExtra("nextSide") ?: side.name)
+                        val test = PodProbe(ManeuverCue(kind, intent.getIntExtra("exit", 0).takeIf { it > 0 }, side),
+                            intent.getIntExtra("meters", 100), nextKind?.let {
+                                ManeuverCue(it, intent.getIntExtra("nextExit", 0).takeIf { e -> e > 0 }, nextSide)
+                            },
+                            intent.getBooleanExtra("night", false), intent.getBooleanExtra("emphasis", false))
+                        require(!test.experimental || intent.getBooleanExtra("experimental", false)) {
+                            "Enable experimental tests before sending roundabout or approach-intensity codes"
+                        }
+                        // A manual test must never be replaced by a Maps notification or resume it at expiry.
+                        forwarding = false
+                        prefs.edit().putBoolean("forwarding", false).apply()
+                        AppState.completedProbe = null
+                        AppState.completedProbeAt = null
+                        probe = test
+                        probeUntil = SystemClock.elapsedRealtime() + 20_000
+                        AppState.event("Stationary screen test requested for 20 seconds: ${test.cue.label}")
+                        refreshRoute()
+                    } catch (error: IllegalArgumentException) {
+                        AppState.event(error.message ?: "Invalid screen test")
+                    }
+                }
+                "STOP_PROBE" -> { clearProbe(); refreshRoute() }
 
             }
         } catch (_: SecurityException) { onFailure("Bluetooth permission was revoked"); stopSelf() }
         return START_NOT_STICKY
     }
     private fun refreshRoute() {
-        val value = route.current(SystemClock.elapsedRealtime())
+        val now = SystemClock.elapsedRealtime()
+        val value = route.current(now)
         if (value != AppState.navigation) { AppState.navigation = value; AppState.notifyChanged() }
-        session.updateScreen(if (forwarding && value != null) TripperProtocol.navigation(value.maneuver, value.meters) else null,
-            route.expiresAt)
+        if (probe != null && now >= probeUntil) {
+            probe = null
+            AppState.event("Screen test ended; Maps forwarding remains paused")
+        }
+        val side = runCatching { DrivingSide.valueOf(prefs.getString("driving_side", "LEFT")!!) }.getOrDefault(DrivingSide.LEFT)
+        val cue = value?.cue(side)
+        val test = probe
+        val message: String
+        val packet: ByteArray?
+        val validUntil: Long
+        when {
+            test != null -> {
+                message = "Stationary test: ${test.cue.label} · ${((probeUntil - now + 999) / 1000)} s left"
+                packet = test.packet(); validUntil = probeUntil
+            }
+            forwarding && cue != null && session.state != PodSession.State.READY -> {
+                message = "Maps instruction waiting for Pod connection"
+                packet = null; validUntil = 0
+            }
+            forwarding && cue != null && (!cue.experimental || AppState.roundaboutsAllowed) -> {
+                message = "Maps forwarding: ${cue.label}"
+                packet = TripperProtocol.navigation(cue, value.meters); validUntil = route.expiresAt
+            }
+            else -> {
+                message = if (forwarding && cue?.experimental == true)
+                    "${cue.label} recognized; experimental roundabout output is disabled"
+                else "No screen is being forwarded"
+                packet = null; validUntil = 0
+            }
+        }
+        if (AppState.screenMessage != message) { AppState.screenMessage = message; AppState.notifyChanged() }
+        session.updateScreen(packet, validUntil)
+    }
+    private fun clearProbe(clearEvidence: Boolean = false) {
+        probe = null; probeUntil = 0
+        if (clearEvidence) { AppState.completedProbe = null; AppState.completedProbeAt = null }
     }
     override fun onReady(address: String) {
         session.start(prefs.getString("verified_address", null) == address)
     }
     override fun onWriteComplete(success: Boolean) { session.onWriteComplete(success) }
     override fun onFailure(reason: String) {
-        session.stop(); transport.close(); AppState.status(reason)
+        clearProbe(); session.stop(); transport.close(); AppState.status(reason)
     }
     override fun onEvent(message: String) { AppState.event(message) }
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
         session.stop(); transport.close(); route.clear()
+        clearProbe(); AppState.roundaboutsAllowed = false
+        AppState.screenMessage = "No screen is being forwarded"
         AppState.onMapsPost = null; AppState.onMapsRemove = null; AppState.onMapsDisconnect = null
         AppState.navigation = null; AppState.status("Stopped")
         super.onDestroy()

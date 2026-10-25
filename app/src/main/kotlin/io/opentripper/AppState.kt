@@ -2,6 +2,8 @@ package io.opentripper
 
 import io.opentripper.core.MapsManeuver
 import io.opentripper.core.MapsNotification
+import io.opentripper.core.PodProbe
+import io.opentripper.core.PodSession
 
 /** In-process UI state, accessed on main looper only. No notification contents go to disk or network. */
 object AppState {
@@ -9,6 +11,11 @@ object AppState {
     var devices: List<Pair<String, String>> = emptyList(); private set
     var navigation: MapsManeuver? = null
     var observerConnected = false
+    var sessionState = PodSession.State.STOPPED
+    var screenMessage = "No screen is being forwarded"
+    var completedProbe: PodProbe? = null
+    var completedProbeAt: String? = null
+    var roundaboutsAllowed = false
     var requestMapsSnapshot: (() -> Unit)? = null
     var onMapsPost: ((MapsNotification) -> Unit)? = null
     var onMapsRemove: ((String) -> Unit)? = null
