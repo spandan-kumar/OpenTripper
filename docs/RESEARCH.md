@@ -10,6 +10,8 @@ Reviewed 25 October 2026. The hardware target is the original small BLE Tripper 
 
 An app can preserve a maneuver correctly while firmware still draws an unclear icon. Conversely, a distinct firmware icon cannot help if our input source loses the maneuver type. Both sides need evidence.
 
+Update, 31 October 2026: [actual Hunter photos](HUNTER_RESULT_2026-10-31.md) now confirm seven built-in graphic combinations. The separate [Pod UI investigation](POD_UI_RESEARCH.md) covers presentation controls, firmware leads found in the installed official app, and custom-hardware projects. A full stock-Pod UI redesign has not been demonstrated.
+
 ## Projects evaluated
 
 | Project | Fit and evidence | Decision |

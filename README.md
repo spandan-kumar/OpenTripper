@@ -8,6 +8,7 @@ A Kotlin Android app for the Royal Enfield **Tripper Pod** advertising as `RE_DI
 **Experimental. The standard seven-checkpoint run was completed on a Hunter Pod on 31 October 2026: photos show distinct turn/fork/exit/U-turn graphics and the small following-turn arrow. Roundabouts and live navigation remain unverified. Tripper Dash is unsupported.**
 
 See [the actual Hunter hardware result](docs/HUNTER_RESULT_2026-10-31.md) for the observed graphics and remaining limits.
+See [Pod UI and firmware research](docs/POD_UI_RESEARCH.md) for what can change on the stock display, the official-app update leads, and the hardware-replacement alternative.
 
 ## One installation for the remaining bike checks
 
