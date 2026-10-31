@@ -1,6 +1,6 @@
 # Stock Pod firmware and hardware investigation
 
-31 October–1 November 2026. Continues [the UI research](POD_UI_RESEARCH.md). Target: original small Tripper Pod, not Tripper Dash. No replacement firmware or changed Pod layout has been built, installed or demonstrated. The latest [dealer-tool inspection](#public-dealer-tool-found-and-inspected) identifies DOL software and Visteon cluster components, but does not establish small-Pod coverage.
+31 October–1 November 2026. Continues [the UI research](POD_UI_RESEARCH.md). Target: original small Tripper Pod, not Tripper Dash. No replacement firmware or changed Pod layout has been built, installed or demonstrated. The latest work reconstructs [the OTA transfer protocol](POD_OTA_PROTOCOL.md), implements a tested [offline inspector/planner](../tools/README.md), and checks the current app and a legacy European package for firmware acquisition. The [dealer-tool inspection](#public-dealer-tool-found-and-inspected) does not establish small-Pod coverage.
 
 ## What the supplied internal photographs add
 
@@ -172,3 +172,44 @@ The selected file hashes, exact string offsets, extraction counts, source links 
 - [RE's original-Pod FAQ](https://www.royalenfield.com/in/en/motorcycles/tripper/) recommends regular updates but supplies no dealer-tool identity or physical update procedure.
 
 **Status:** the dealer software is identified and its package inspected. The original Pod's actual dealer flashing method remains unresolved. The manufacturer app's BLE updater is still the identified phone-side firmware transport; its intended service-centre fallback must not be promoted into a verified cable procedure. The separate Hunter charging socket remains unsupported as a data entry point. For a redesigned stock UI, a matching Pod firmware image/backup and a recoverable write path are still missing.
+
+## Deeper app OTA reconstruction and acquisition follow-up
+
+1 November 2026. The user has only the working Pod on their Hunter. This pass kept it intact and sent no OTA command. The intended approach is acquisition and offline analysis before any proposed modification.
+
+### Transfer path implemented as an offline workbench
+
+The [protocol reconstruction](POD_OTA_PROTOCOL.md) now specifies the 02–0A command layouts, per-reply state transitions, CRC, SHA-256 blocks, retry budgets, S3 parsing and partial-update mapping. Firmware payloads in this reviewed host path are plain S3 data, with no host encryption/signature API found in the five focused updater classes. Device-side image checks and any signed image trailer remain unknown. The app's final file-verification/reflash operations do not reveal their device implementation.
+
+The reconstruction also establishes that **02 is update-start**, not a harmless identity request. A successful reply causes 04 parameter negotiation, file parsing and initialization. Software-version query 03 is separate; it is not a read-back operation. No firmware-backup/read-back command was identified.
+
+[The Python workbench](../tools/README.md) validates local S-record images and produces an offline block/mapping/packet plan. It has no network, Bluetooth, serial or device transport. Eighteen unit tests passed, including malformed checksums/counts, overlaps, sparse/order constraints, mapping boundaries, CRC fixtures and exact-multiple segmentation. Actual CLI execution against a clearly labelled **synthetic** 4,101-byte image produced two blocks and 43 simulated packets with a chosen 128-byte segment size. This is not a stock firmware image, hardware test or demonstrated modified-image installation.
+
+### Current app: authentication checked, denial reproduced
+
+Static review found a separate Firebase custom-token sign-in and per-region Firebase/Auth managers. `tw6.e0` calls the auth check `tw6.e` before reading `RE_FOTA_TRIPPER`; `tw6.m` refreshes credentials through the app's existing session. These are observations of the normal app flow, not instructions to extract credentials. Exact locations: `classes8.dex` auth check entry `209af0`, refresh entry `20a158`, metadata entry `20d374`; `a07.a/f` choose logged-in-region Firestore/Auth instances, falling back to defaults.
+
+The Pixel's installed app was opened normally and navigated to Manage Devices, showing the saved `RE_DISP`. Fresh focused log review counted seven successful `signInWithCustomToken()` markers and no authentication-format/general-authentication error markers, yet the Tripper metadata result again contained `PERMISSION_DENIED` and null firmware/mapping URLs and versions. This weakens the simple explanation that no sign-in was attempted. It does not prove the correct account/project permissions or diagnose the server's rules. Only whitelisted result/status observations were retained; credentials were not extracted or reused.
+
+### Legacy European app: independently identified backend
+
+The separate [manufacturer's European app listing](https://play.google.com/store/apps/details?id=com.eu.royalenfield.reprime) identifies package `com.eu.royalenfield.reprime`. An archived 2.1 APK (versionCode 28) was downloaded for offline inspection, not installed:
+
+```text
+174,794,982 bytes; five DEX files
+SHA-256 2fc564c9d7ea0b1a353282a1de47d6becfa2121bcce234e928429566f533e581
+APK Signature Scheme v3 verifies; SourceStamp verifies
+Signer certificate SHA-256 f6877332aace8a5d878c7a5e53477f0d5aaa7e7b8f120fad727c961449c99547
+```
+
+The archive digest matched the published archive identity. Signature verification establishes integrity under the APK's signing key, not by itself the manufacturer's ownership of that key. No account or region was changed, and no current-app token was reused with this package/backend.
+
+Its resource project is `eu-we-re-prime-prod01`. `classes4.dex`, `jh.r0.r0` at `45a26c`, obtains the default Firestore instance and listens to `RE_FOTA_TRIPPER` (collection string at `45a284`). This is a second concrete original-Pod metadata route. One ordinary unauthenticated read of that exact collection returned HTTP 403 / `PERMISSION_DENIED`. An authenticated European-app session was not tested. Its 131 assets/raw members had no obvious firmware-extension candidate or S3 text in the bounded scan up to 10 MB per entry. No firmware URL was recovered from the focused legacy classes.
+
+### Shared metadata API: bounded hypothesis checked
+
+The current app also contains `otap/otap/firmwaredownload`. A concrete caller passes `KDASH` at `classes8.dex` `475dcc` before invoking `O2` at `475dd6`, then the device-info callback invokes the request builder `Q1`. This establishes a Dash use, not exclusive server support for Dash. A single unauthenticated metadata request with candidate values `TRIPPER` / `IN` / `J1C1` returned HTTP 200 with `errorCode: OBJECT_DOES_NOT_EXIST`, `result: failed`. Those values were a hypothesis, not a captured Pod request; that response does not prove all Pod records or payload variants are absent. No firmware URL was returned, no activation/status/report endpoint was called and no firmware transfer occurred.
+
+**Remaining blocker:** a real matching stock image or a successful official metadata/download result. The host wire format can now be studied and exercised offline, but firmware graphics, bootloader validation and a recoverable custom-image installation cannot be established without the firmware itself. An OTA application image alone may omit bootloader, calibration and recovery data. The user's Reddit recollection is retained as an unverified lead rather than a performed update on their Pod.
+
+The [structured follow-up evidence](evidence/pod-ota-2026-11-01.json) records artifact identities, request scope/results, runtime status observations, synthetic validation and device-action limits.

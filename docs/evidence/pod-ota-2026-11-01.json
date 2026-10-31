@@ -1,0 +1,84 @@
+{
+  "checked_date": "2026-11-01",
+  "target": "Original small RE_DISP Tripper Pod OTA, not Wi-Fi Tripper Dash",
+  "current_apk": {
+    "package": "com.royalenfield.reprime",
+    "version": "10.1.23(45)",
+    "base_sha256": "d08478e8c564624503b440834a40499cd4acdc1c8572e49fe1b4830472ad37a4"
+  },
+  "current_app_runtime": {
+    "navigation": "Normal app launch -> Navigation -> Connect -> Manage Devices; saved RE_DISP visible; no update action selected",
+    "firebase_custom_token_success_log_markers": 7,
+    "firebase_auth_format_error_log_markers": 0,
+    "firebase_general_auth_error_log_markers": 0,
+    "tripper_metadata_error": "PERMISSION_DENIED: Missing or insufficient permissions.",
+    "firmware_url": null,
+    "firmware_mapping_url": null,
+    "firmware_version": null,
+    "limitations": [
+      "Successful sign-in markers do not establish the correct project/account permissions.",
+      "Credentials were not extracted, stored in this evidence or reused."
+    ]
+  },
+  "legacy_apk": {
+    "package": "com.eu.royalenfield.reprime",
+    "version": "2.1",
+    "version_code": 28,
+    "bytes": 174794982,
+    "sha256": "2fc564c9d7ea0b1a353282a1de47d6becfa2121bcce234e928429566f533e581",
+    "v3_signature_verifies": true,
+    "source_stamp_verifies": true,
+    "signer_certificate_sha256": "f6877332aace8a5d878c7a5e53477f0d5aaa7e7b8f120fad727c961449c99547",
+    "signature_identity_limit": "Integrity under the artifact signing key; manufacturer ownership of the key is not independently attested here.",
+    "default_project": "eu-we-re-prime-prod01",
+    "metadata_method": "classes4.dex jh.r0.r0 at 0x45a26c",
+    "collection_string_offset": "0x45a284",
+    "collection": "RE_FOTA_TRIPPER",
+    "unauthenticated_collection_read_http": 403,
+    "error": "PERMISSION_DENIED",
+    "authenticated_legacy_session_tested": false,
+    "installed": false
+  },
+  "shared_api_hypothesis": {
+    "url": "https://api-tbt.royalenfield.com/v3/otap/otap/firmwaredownload",
+    "request": {
+      "firmwareDeviceType": "TRIPPER",
+      "region": "IN",
+      "vehicleVariant": "J1C1"
+    },
+    "request_basis": "Candidate original Hunter Pod type/variant; not established as an app-generated payload",
+    "authenticated": false,
+    "http_status": 200,
+    "response": {
+      "errorCode": "OBJECT_DOES_NOT_EXIST",
+      "result": "failed"
+    }
+  },
+  "offline_workbench": {
+    "tests_passed": 18,
+    "test_command": "python3 -m unittest discover -s tools -p 'test_*.py' -v",
+    "cli_fixture": "SYNTHETIC ONLY; not recovered or stock firmware",
+    "synthetic_data_bytes": 4101,
+    "assumed_segment_bytes": 128,
+    "blocks": 2,
+    "simulated_packets": 43,
+    "device_transport_implemented": false,
+    "files": {
+      "tools/pod_firmware.py": "c197dfe9cbfc45205cdbfb032ce64b9b7a6c3d8b55aba4208afe383a299e48b6",
+      "tools/test_pod_firmware.py": "1e4b0f7cc4794306764d2c65ab572c91daf774d36b84c6ba04845b196700537f",
+      "docs/POD_OTA_PROTOCOL.md": "6828b6e60f946455e983a17ac385b2584d1e05c77b7ffb08e225524a4bcf4654"
+    }
+  },
+  "device_actions": {
+    "pod_opened": false,
+    "ota_commands_transmitted": false,
+    "firmware_flashed": false,
+    "new_apk_installed": false
+  },
+  "acceptance_limits": [
+    "Host CRC and SHA-256 transfer format reconstructed, not observed on hardware.",
+    "No firmware image acquired; firmware internals and bootloader acceptance are unknown.",
+    "No read-back/backup command identified in the reviewed OTA command set.",
+    "A full OTA application image need not include a bootloader or recovery data."
+  ]
+}

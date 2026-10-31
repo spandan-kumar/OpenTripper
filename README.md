@@ -10,6 +10,7 @@ A Kotlin Android app for the Royal Enfield **Tripper Pod** advertising as `RE_DI
 See [the actual Hunter hardware result](docs/HUNTER_RESULT_2026-10-31.md) for the observed graphics and remaining limits.
 See [Pod UI and firmware research](docs/POD_UI_RESEARCH.md) for what can change on the stock display, the official-app update leads, and the hardware-replacement alternative.
 The [deeper firmware investigation](docs/POD_FIRMWARE_INVESTIGATION.md) records the supplied board photographs, likely KW36A-family/debug-pad leads, updater trace and current firmware-acquisition blocker.
+The [reconstructed Pod OTA protocol](docs/POD_OTA_PROTOCOL.md) documents firmware framing, acknowledgements, block hashing and commit stages. The [offline firmware workbench](tools/README.md) validates local S-record files and simulates update packets. It has no device transport; no stock firmware image or modified-image acceptance has been demonstrated.
 
 ## One installation for the remaining bike checks
 
