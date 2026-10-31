@@ -5,7 +5,9 @@ Local workspace: `/Users/Spandan/github.com/spandan-kumar/OpenTripper`.
 The existing project was moved here on 25 October 2026; this continues the original starter.
 
 A Kotlin Android app for the Royal Enfield **Tripper Pod** advertising as `RE_DISP`.
-**Experimental. Phone UI, route import and report export were exercised on a Pixel 8; physical Pod behavior remains unverified. Tripper Dash is unsupported.**
+**Experimental. The standard seven-checkpoint run was completed on a Hunter Pod on 31 October 2026: photos show distinct turn/fork/exit/U-turn graphics and the small following-turn arrow. Roundabouts and live navigation remain unverified. Tripper Dash is unsupported.**
+
+See [the actual Hunter hardware result](docs/HUNTER_RESULT_2026-10-31.md) for the observed graphics and remaining limits.
 
 ## What is implemented
 

@@ -1,3 +1,11 @@
+# OpenTripper validation
+
+## Hardware update — 31 October 2026
+
+The standard guided test completed on the user's Hunter Pod with all seven photos and 46 successful screen writes. Reviewed photographs show distinct ordinary/sharp/slight turns, fork, exit, U-turn and a small following-right arrow. See [the full hardware result](HUNTER_RESULT_2026-10-31.md). Roundabouts and live navigation remain unverified.
+
+The sections below preserve the 25 October build and phone checks, when no Pod had yet been tested. No app code or APK changed for this documentation update.
+
 # OpenTripper 0.3 validation — 25 October 2026
 
 Workspace: `/Users/Spandan/github.com/spandan-kumar/OpenTripper`.

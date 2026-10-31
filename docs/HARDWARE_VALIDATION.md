@@ -1,6 +1,6 @@
 # Required hardware and phone checks
 
-The Pod-specific checks below have **not** been run. Phone UI checks are recorded separately in VALIDATION.md. Passing JVM tests or building an APK does not complete them. Test stationary, with an ignition-powered Tripper Pod and an Android BLE-capable phone.
+A standard seven-checkpoint run was completed on the user's Hunter Pod on 31 October 2026. See [the hardware result](HUNTER_RESULT_2026-10-31.md) for the seven photographed graphics and 46 successful writes. The checklist below remains the broader validation plan; that single run does not complete it. Phone UI checks are recorded separately in VALIDATION.md. Passing JVM tests or building an APK does not complete hardware checks. Test stationary, with an ignition-powered Tripper Pod and an Android BLE-capable phone.
 
 - Identify exact Pod model/firmware; confirm this is a Tripper Pod, not Dash.
 - Confirm `RE_DISP` scan window and UART service/characteristic properties. Check phones on Android 8–11 and 12–15, including permission refusal/revocation, Bluetooth off/on and location settings on older versions.
