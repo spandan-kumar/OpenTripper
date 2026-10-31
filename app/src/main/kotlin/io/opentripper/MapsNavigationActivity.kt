@@ -49,7 +49,7 @@ class MapsNavigationActivity : Activity() {
             text = value; textSize = size; setPadding(0, 12, 0, 12); content.addView(this)
         }
         fun button(label: String, action: () -> Unit) = Button(this).apply { text = label; setOnClickListener { action() }; content.addView(this) }
-        button("Back") { finish() }
+        button(if (intent.getBooleanExtra("field", false)) "Back to all checks" else "Back") { finish() }
         text("Maps → your Pod", 28f)
         text("While parked: connect the Pod, open Google Maps and start a route. Return here to check the recognized direction before riding. English instructions only.")
         status = text("Ready to connect", 20f)
@@ -79,7 +79,7 @@ class MapsNavigationActivity : Activity() {
         button("Forget saved Pod") { command("FORGET") }
         button("Stop navigation connection") { pendingStart = false; command("STOP") }
         button("Notification access settings") { openNotificationSettings() }
-        text("OpenTripper reads Google Maps notifications. Android grants broad notification access; the app filters for Maps and saves no notification text or route history. No location or camera access is needed on Android 12+ for this mode.", 14f)
+        text("OpenTripper reads Google Maps notifications. Android grants broad notification access; the app filters for Maps. Normal navigation saves no notification text; the test kit can save Maps wording if you enable its diagnostic option. No location or camera access is needed on Android 12+ for this mode.", 14f)
         text("Your Hunter test verified seven screen commands. Maps interpretation is still experimental. Roundabouts stay disabled here until separately tested. Missing or old directions stop screen refresh; the Pod may disconnect, so reconnect while parked.", 14f)
         pendingStart = savedInstanceState?.getBoolean("pendingStart") ?: false
         externalPending = savedInstanceState?.getBoolean("externalPending") ?: false
@@ -149,7 +149,9 @@ class MapsNavigationActivity : Activity() {
     }
     private fun command(action: String, extras: Intent.() -> Unit = {}) {
         if (action != "MAPS_START" && AppState.onMapsPost == null) return
-        val request = Intent(this, PodService::class.java).setAction(action).apply(extras)
+        val actual = if (action == "MAPS_START" && intent.getBooleanExtra("field", false)) "FIELD_MAPS" else action
+        if (actual == "FIELD_MAPS" && AppState.fieldSessionId == null) { status.text = "Return to the test kit and continue the saved session"; return }
+        val request = Intent(this, PodService::class.java).setAction(actual).apply(extras)
         try { if (action == "MAPS_START") startForegroundService(request) else startService(request) }
         catch (_: SecurityException) { status.text = "Bluetooth permission is needed" }
     }
@@ -167,7 +169,7 @@ class MapsNavigationActivity : Activity() {
             !AppState.observerConnected -> "Waiting for Android to connect the Maps notification reader."
             AppState.onMapsPost == null -> "Tap Connect Pod & forward Maps to start."
             else -> when (AppState.mapsStatus) {
-                MapsRoute.Status.WAITING -> "Reader connected. Open Maps and start turn-by-turn navigation."
+                MapsRoute.Status.WAITING -> "Reader connected. Open Maps and start turn-by-turn navigation. ${AppState.screenMessage}"
                 MapsRoute.Status.RECOGNIZED -> "Maps instruction recognized. ${AppState.screenMessage}"
                 MapsRoute.Status.UNSUPPORTED -> "Maps sent a notification, but its direction/distance could not be read. No arrow is guessed."
                 MapsRoute.Status.EXPIRED -> "No fresh recognized direction for 15 seconds. Screen updates stopped."

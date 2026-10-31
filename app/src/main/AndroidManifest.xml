@@ -24,6 +24,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".ManeuverLabActivity" android:exported="false" />
+        <activity android:name=".FieldTestActivity" android:exported="false" />
         <activity android:name=".MapsNavigationActivity" android:exported="false" />
         <activity android:name=".GuidedTestActivity" android:exported="false" />
         <activity android:name=".PodCameraActivity" android:exported="false" />

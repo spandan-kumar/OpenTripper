@@ -37,6 +37,7 @@ class GuidedReportStore(private val context: Context) {
                 .put("maneuver", step.probe.cue.maneuver.name).put("exit", step.probe.cue.exit ?: JSONObject.NULL)
                 .put("drivingSide", step.probe.cue.drivingSide.name).put("meters", step.probe.meters)
                 .put("nextManeuver", step.probe.next?.maneuver?.name ?: JSONObject.NULL)
+                .put("night", step.probe.night).put("approachEmphasis", step.probe.approachEmphasis)
                 .put("experimental", step.probe.experimental).put("successfulWrites", result.writes)
                 .put("firstWriteElapsedMs", result.firstWriteAt?.minus(run.startedAt) ?: JSONObject.NULL)
                 .put("photo", result.photo ?: JSONObject.NULL).put("skippedByUser", result.skipped)
@@ -44,11 +45,11 @@ class GuidedReportStore(private val context: Context) {
                 .put("packetHex", step.probe.packet().joinToString(" ") { "%02X".format(it.toInt() and 255) }))
         }
         val report = JSONObject().put("schemaVersion", 1).put("runId", id)
-            .put("appVersion", "0.4.0-experimental").put("phoneModel", Build.MODEL).put("androidApi", Build.VERSION.SDK_INT)
+            .put("appVersion", "0.5.0-experimental").put("phoneModel", Build.MODEL).put("androidApi", Build.VERSION.SDK_INT)
             .put("startedAt", previous?.optString("startedAt") ?: Instant.now().toString())
             .put("updatedAt", Instant.now().toString()).put("phase", run.phase.name)
             .put("reason", run.reason ?: JSONObject.NULL).put("elapsedMs", SystemClock.elapsedRealtime() - run.startedAt)
-            .put("currentStep", run.index).put("steps", rows).put("events", JSONArray(events))
+            .put("durationLimitMs", run.durationMs).put("currentStep", run.index).put("steps", rows).put("events", JSONArray(events))
             .put("evidence", "Successful BLE callbacks and user-captured photos; no automatic visual verdict or PIN acceptance decoder")
         write(id, report)
     }
@@ -61,6 +62,13 @@ class GuidedReportStore(private val context: Context) {
     fun read(id: String): JSONObject? = runCatching {
         JSONObject(AtomicFile(File(folder(id), "report.json")).openRead().bufferedReader().use { it.readText() })
     }.getOrNull()
+    fun interrupt(id: String, reason: String) {
+        val report = read(id) ?: return
+        if (report.optString("phase") !in setOf("COMPLETED", "FAILED", "CANCELLED", "INTERRUPTED")) {
+            report.put("phase", "INTERRUPTED").put("reason", reason)
+            write(id, report)
+        }
+    }
     fun latestForDisplay(): JSONObject? {
         val id = latestId() ?: return null
         val report = read(id) ?: return null

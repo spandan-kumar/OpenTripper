@@ -1,0 +1,10 @@
+<resources>
+    <item name="field_group_roundabouts" type="id" />
+    <item name="field_group_junctions" type="id" />
+    <item name="field_group_display" type="id" />
+    <item name="field_group_maps_replay" type="id" />
+    <item name="field_group_baseline" type="id" />
+    <item name="field_text_optin" type="id" />
+    <item name="field_side" type="id" />
+    <item name="field_retry" type="id" />
+</resources>

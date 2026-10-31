@@ -37,12 +37,14 @@ class PodCameraActivity : ComponentActivity() {
     private var reviewing = false
     private var accepted = false
     private var requesting = false
+    private var capturedAt: String? = null
+    private val live by lazy { intent.getBooleanExtra("live", false) }
     private val check by lazy { intent.getBooleanExtra("check", false) }
     private val runId by lazy { intent.getStringExtra("run") ?: "" }
     private val stepId by lazy { intent.getStringExtra("step") ?: "" }
     private val photoName by lazy { "photo-$stepId.jpg" }
     private val photoFile: File by lazy {
-        if (check) File(cacheDir, "camera-check.jpg") else GuidedReportStore(this).photoFile(runId, photoName)
+        if (check) File(cacheDir, "camera-check.jpg") else if (live) FieldReportStore(this).photoFile(runId, photoName) else GuidedReportStore(this).photoFile(runId, photoName)
     }
     private val redraw: () -> Unit = { updateAvailability() }
 
@@ -72,12 +74,13 @@ class PodCameraActivity : ComponentActivity() {
         }
         capture = button("Take photo") { takePhoto() }
         retake = button("Retake") { reviewing = false; photoFile.delete(); updateAvailability() }
-        accept = button(if (check) "Finish camera check" else "Use photo & next test") {
+        accept = button(if (check) "Finish camera check" else if (live) "Save live Maps photo" else "Use photo & next test") {
             if (!reviewing || !photoFile.isFile || (!check && !validStep())) return@button
             accepted = true
-            if (!check) setResult(RESULT_OK, Intent().putExtra("run", runId).putExtra("step", stepId).putExtra("photo", photoName))
+            if (!check) setResult(RESULT_OK, Intent().putExtra("run", runId).putExtra("step", stepId).putExtra("photo", photoName).putExtra("capturedAt", capturedAt))
             finish()
         }
+        capturedAt = savedInstanceState?.getString("capturedAt")
         reviewing = savedInstanceState?.getBoolean("reviewing") == true && photoFile.isFile
         if (reviewing) showReview()
         updateAvailability()
@@ -91,13 +94,14 @@ class PodCameraActivity : ComponentActivity() {
         updateAvailability()
     }
     override fun onStop() { AppState.listeners.remove(redraw); super.onStop() }
-    override fun onSaveInstanceState(outState: Bundle) { outState.putBoolean("reviewing", reviewing); super.onSaveInstanceState(outState) }
+    override fun onSaveInstanceState(outState: Bundle) { outState.putBoolean("reviewing", reviewing); outState.putString("capturedAt", capturedAt); super.onSaveInstanceState(outState) }
     override fun onDestroy() {
         camera?.unbindAll()
         if (::capture.isInitialized && !isChangingConfigurations && (!accepted || check)) photoFile.delete()
         super.onDestroy()
     }
     private fun validStep(): Boolean {
+        if (live) return AppState.fieldSessionId == runId && AppState.fieldPhase == "LIVE_MAPS" && AppState.fieldLivePhotoName == photoName
         val run = AppState.guidedRun ?: return false
         return AppState.guidedRunId == runId && run.phase == GuidedRun.Phase.PHOTO_REQUIRED && run.current?.id == stepId
     }
@@ -109,6 +113,7 @@ class PodCameraActivity : ComponentActivity() {
             !valid -> "This test stopped or the photo wait expired. Go back to share the partial report."
             !permitted -> "Allow camera access here to photograph your Pod. Photos stay on this phone until you share a report."
             reviewing -> "Check that the Pod screen is sharp and readable. Retake if needed."
+            live -> "Live Maps screen: frame the Pod. The instruction may change; its timing is recorded with this photo."
             check -> "Camera check: frame the Pod. This practice photo is deleted when you leave."
             else -> "${intent.getStringExtra("title")}\nFrame the Pod only. The test screen stays active; take the photo within two minutes."
         }
@@ -159,6 +164,7 @@ class PodCameraActivity : ComponentActivity() {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     capturing = false
                     if (isDestroyed || isFinishing) { photoFile.delete(); return }
+                    capturedAt = java.time.Instant.now().toString()
                     reviewing = true; showReview(); updateAvailability()
                 }
                 override fun onError(exception: ImageCaptureException) {

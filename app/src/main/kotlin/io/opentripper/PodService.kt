@@ -16,6 +16,18 @@ class PodService : Service(), BleTransport.Listener {
     private var targetAddress: String? = null
     private val prefs by lazy { getSharedPreferences("pod", MODE_PRIVATE) }
     private var forwarding = false
+    private val fieldReports by lazy { FieldReportStore(this) }
+    private var fieldId: String? = null
+    private var fieldUntil = 0L
+    private var fieldPublishedRun: String? = null
+    private var fieldMapsWrites = 0
+    private var fieldLastSource = ""
+    private var fieldHold: PodProbe? = null
+    private var fieldHoldUntil = 0L
+    private fun fieldPhase(value: String) {
+        AppState.fieldPhase = value
+        fieldId?.let { id -> fieldReports.update(id) { it.put("phase", value) } }
+    }
     private var probe: PodProbe? = null
     private var probeUntil = 0L
     private var guided: GuidedRun? = null
@@ -47,7 +59,11 @@ class PodService : Service(), BleTransport.Listener {
                     if (session.state == PodSession.State.READY) run.connected()
                     run.tick(); publishGuided()
                 }
-                if (guided?.terminal == true) {
+                if (fieldId != null && SystemClock.elapsedRealtime() >= fieldUntil) {
+                    finishField("Session reached its thirty-minute limit")
+                    stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); return
+                }
+                if (guided?.terminal == true && fieldId == null) {
                     stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); return
                 }
                 refreshRoute()
@@ -72,6 +88,13 @@ class PodService : Service(), BleTransport.Listener {
                 })
             }, { reason -> onFailure(reason) }, { bytes ->
                 activeGuided?.written(bytes)
+                val live = AppState.navigation
+                val side = runCatching { DrivingSide.valueOf(prefs.getString("driving_side", "LEFT")!!) }.getOrDefault(DrivingSide.LEFT)
+                if (fieldId != null && AppState.fieldPhase == "LIVE_MAPS" && live != null &&
+                    bytes.contentEquals(TripperProtocol.navigation(live.cue(side), live.meters))) {
+                    fieldMapsWrites++
+                    fieldReports.update(fieldId!!) { it.put("mapsSuccessfulScreenWrites", fieldMapsWrites) }
+                }
                 publishGuided()
                 probe?.let { test ->
                     if (bytes.contentEquals(test.packet()) && AppState.completedProbe != test) {
@@ -81,7 +104,11 @@ class PodService : Service(), BleTransport.Listener {
                     }
                 }
             })
-        AppState.onMapsPost = { note -> route.post(note, SystemClock.elapsedRealtime()); refreshRoute() }
+        AppState.onMapsPost = { note ->
+            route.post(note, SystemClock.elapsedRealtime())
+            recordFieldMaps(note)
+            refreshRoute()
+        }
         AppState.onMapsRemove = { key -> route.remove(key); refreshRoute() }
         AppState.onMapsDisconnect = { route.clear(); refreshRoute() }
         AppState.requestMapsSnapshot?.invoke()
@@ -89,6 +116,7 @@ class PodService : Service(), BleTransport.Listener {
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "STOP") {
+            finishField("Stopped by user")
             cancelGuided()
             stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); return START_NOT_STICKY
         }
@@ -97,6 +125,8 @@ class PodService : Service(), BleTransport.Listener {
         }
         try {
             startForegroundNotification()
+            if (fieldId != null && intent?.action in setOf("GUIDE_START", "MAPS_START", "SCAN", "CONNECT", "PROBE", "FORWARD"))
+                finishField("Changed to a standalone mode")
             if (intent?.action in setOf("SCAN", "CONNECT", "FORWARD", "PROBE", "STOP_PROBE", "MAPS_START")) cancelGuided()
             // A later manual action takes ownership of the service after a completed run.
             if (intent?.action?.startsWith("GUIDE_") != true && guided?.terminal == true) {
@@ -106,6 +136,13 @@ class PodService : Service(), BleTransport.Listener {
                 mapsConnecting = false; selectingPod = false; discoveryToken++
             }
             when (intent?.action) {
+                "FIELD_START" -> beginField(intent, false)
+                "FIELD_CONTINUE", "FIELD_RETRY" -> beginField(intent, true)
+                "FIELD_FINISH" -> { finishField("Finished by user"); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf() }
+                "FIELD_MAPS" -> if (fieldId != null && activeGuided == null) {
+                    guided = null; guidedId = null; fieldPhase("LIVE_MAPS"); startMaps()
+                }
+                "FIELD_PHOTO" -> saveFieldPhoto(intent)
                 "MAPS_START" -> startMaps()
                 "MAPS_CONNECT" -> intent.getStringExtra("address")?.let { address ->
                     if (mapsConnecting && selectingPod && AppState.devices.any { it.first == address }) connectDiscovered(address)
@@ -199,7 +236,12 @@ class PodService : Service(), BleTransport.Listener {
     private fun refreshRoute() {
         val now = SystemClock.elapsedRealtime()
         val value = route.current(now)
+        if (fieldId != null && AppState.fieldPhase == "LIVE_MAPS" && fieldLastSource != route.status.name) {
+            fieldLastSource = route.status.name
+            fieldReports.event(fieldId!!, org.json.JSONObject().put("type", "sourceState").put("state", route.status.name))
+        }
         if (AppState.mapsStatus != route.status) { AppState.mapsStatus = route.status; AppState.notifyChanged() }
+        if (value != null) fieldHold = null
         if (value != AppState.navigation) { AppState.navigation = value; AppState.notifyChanged() }
         if (probe != null && now >= probeUntil) {
             probe = null
@@ -226,6 +268,10 @@ class PodService : Service(), BleTransport.Listener {
                 message = "Stationary test: ${test.cue.label} · ${((probeUntil - now + 999) / 1000)} s left"
                 packet = test.packet(); validUntil = probeUntil
             }
+            fieldId != null && AppState.fieldPhase == "LIVE_MAPS" && fieldHold != null && now < fieldHoldUntil && session.state == PodSession.State.READY -> {
+                message = "Holding the final TEST screen while you start Maps; this is not a live direction"
+                packet = fieldHold!!.packet(); validUntil = fieldHoldUntil
+            }
             forwarding && cue != null && session.state != PodSession.State.READY -> {
                 message = "Maps instruction waiting for Pod connection"
                 packet = null; validUntil = 0
@@ -248,18 +294,23 @@ class PodService : Service(), BleTransport.Listener {
         probe = null; probeUntil = 0
         if (clearEvidence) { AppState.completedProbe = null; AppState.completedProbeAt = null }
     }
-    private fun startGuided(experimental: Boolean) {
+    private fun startGuided(experimental: Boolean, selected: List<GuidedRun.Step>? = null) {
         cancelGuided(); clearProbe(clearEvidence = true)
         forwarding = false; prefs.edit().putBoolean("forwarding", false).apply()
         val side = runCatching { DrivingSide.valueOf(prefs.getString("driving_side", "LEFT")!!) }.getOrDefault(DrivingSide.LEFT)
         guidedId = reports.create()
-        guided = GuidedRun(GuidedRun.plan(side, experimental), SystemClock::elapsedRealtime)
+        guided = GuidedRun(selected ?: GuidedRun.plan(side, experimental), SystemClock::elapsedRealtime,
+            if (fieldId != null) 1_200_000L else GuidedRun.MAX_DURATION_MS)
+        fieldId?.let { id ->
+            fieldPublishedRun = null; fieldPhase("SCREENS")
+            fieldReports.update(id) { it.getJSONArray("runs").put(guidedId) }
+        }
         AppState.guidedRun = guided; AppState.guidedRunId = guidedId
         guidedEvents.clear(); guidedSignature = ""; discoveryScheduled = false; selectingPod = false; discoveryToken++
         guidedEvent("Stationary guided test started; experimental=$experimental")
         val power = getSystemService(PowerManager::class.java)
         testWakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OpenTripper:guided-test").apply {
-            acquire(GuidedRun.MAX_DURATION_MS + 30_000)
+            acquire(guided!!.durationMs + 30_000)
         }
         publishGuided()
         if (activeGuided == null) return
@@ -271,6 +322,70 @@ class PodService : Service(), BleTransport.Listener {
             transport.scan(30_000)
         }
         publishGuided(); refreshRoute()
+    }
+    private fun beginField(intent: Intent, existing: Boolean) {
+        if (activeGuided != null) { AppState.event("Finish or stop the active screen sequence before starting another"); return }
+        val id = if (existing) intent.getStringExtra("suite")?.takeIf { fieldReports.read(it) != null }
+            else {
+                finishField("Replaced by a new session")
+                val groups = intent.getStringArrayListExtra("groups").orEmpty().mapNotNull { name ->
+                    runCatching { FieldPlan.Group.valueOf(name) }.getOrNull()
+                }.distinct()
+                fieldReports.create(groups, intent.getBooleanExtra("includeText", false))
+            }
+        if (id == null) return
+        val saved = fieldReports.read(id) ?: return
+        fieldId = id; AppState.fieldSessionId = id; AppState.fieldLivePhotoName = null
+        fieldUntil = SystemClock.elapsedRealtime() + 1_800_000
+        fieldMapsWrites = saved.optInt("mapsSuccessfulScreenWrites")
+        val group = intent.getStringExtra("group")?.let { runCatching { FieldPlan.Group.valueOf(it) }.getOrNull() }
+        if (group != null && (0 until saved.getJSONArray("groups").length()).none { saved.getJSONArray("groups").getString(it) == group.name }) {
+            fieldReports.update(id) { it.getJSONArray("groups").put(group.name) }
+        }
+        val groups = if (group != null) listOf(group) else saved.getJSONArray("groups").let { array ->
+            (0 until array.length()).map { FieldPlan.Group.valueOf(array.getString(it)) }
+        }
+        val side = runCatching { DrivingSide.valueOf(prefs.getString("driving_side", "LEFT")!!) }.getOrDefault(DrivingSide.LEFT)
+        val originalSide = runCatching { DrivingSide.valueOf(saved.optString("drivingSide", side.name)) }.getOrDefault(side)
+        prefs.edit().putString("driving_side", originalSide.name).apply()
+        val steps = if (intent.getBooleanExtra("liveOnly", false)) emptyList()
+            else if (existing && group == null) FieldPlan.remaining(groups, originalSide, fieldReports.photographed(id)) else FieldPlan.steps(groups, originalSide)
+        guided = null; guidedId = null; mapsConnecting = false; selectingPod = false
+        if (steps.isEmpty()) { fieldPhase("LIVE_MAPS"); startMaps() }
+        else startGuided(true, steps)
+        AppState.notifyChanged()
+    }
+    private fun finishField(reason: String, interrupted: Boolean = false) {
+        val id = fieldId ?: return
+        // Save any active child's partial evidence before clearing the outer session.
+        activeGuided?.cancel(); publishGuided()
+        fieldReports.update(id) { it.put("phase", if (interrupted) "INTERRUPTED" else "FINISHED").put("reason", reason)
+            .put("notificationReaderConnectedAtFinish", AppState.observerConnected)
+            .put("mapsSourceStateAtFinish", AppState.mapsStatus.name).put("podSessionStateAtFinish", session.state.name) }
+        fieldHold = null
+        fieldId = null; AppState.fieldSessionId = null; AppState.fieldPhase = ""; AppState.fieldLivePhotoName = null
+        guided = null; guidedId = null
+        releaseTestWakeLock()
+        AppState.notifyChanged()
+    }
+    private fun recordFieldMaps(note: MapsNotification) {
+        val id = fieldId ?: return
+        if (AppState.fieldPhase != "LIVE_MAPS") return
+        val event = FieldDiagnostics.maps(note, fieldReports.read(id)?.optBoolean("includeMapsText") == true) ?: return
+        fieldReports.event(id, event)
+    }
+    private fun saveFieldPhoto(intent: Intent) {
+        val id = fieldId ?: return
+        val name = intent.getStringExtra("photo") ?: return
+        if (intent.getStringExtra("suite") != id || name != AppState.fieldLivePhotoName || AppState.fieldPhase != "LIVE_MAPS") return
+        val file = fieldReports.photoFile(id, name)
+        if (!file.isFile || file.length() !in 1..20_000_000 || (fieldReports.read(id)?.getJSONArray("livePhotos")?.length() ?: 20) >= 20) return
+        fieldReports.update(id) { report -> report.getJSONArray("livePhotos").put(org.json.JSONObject()
+            .put("photo", name).put("capturedAt", intent.getStringExtra("capturedAt"))
+            .put("acceptedAt", Instant.now().toString()).put("maneuverAtAccept", AppState.navigation?.maneuver?.name ?: org.json.JSONObject.NULL)
+            .put("sourceStateAtAccept", AppState.mapsStatus.name).put("sessionStateAtAccept", session.state.name)
+            .put("evidence", "Live screen may change between capture and acceptance; compare capture time to event log")) }
+        AppState.fieldLivePhotoName = null; AppState.notifyChanged()
     }
     private fun startMaps() {
         AppState.roundaboutsAllowed = false
@@ -336,8 +451,24 @@ class PodService : Service(), BleTransport.Listener {
         catch (_: java.io.IOException) { run.fail("Could not save test evidence; check phone storage") }
         if (run.terminal) {
             releaseTestWakeLock(); selectingPod = false
-            // Invalidate scan and connection callbacks when a bounded run ends.
-            session.stop(); targetAddress = null; transport.close()
+            if (fieldId != null) {
+                if (fieldPublishedRun != id) {
+                    fieldPublishedRun = id
+                    fieldPhase(if (run.phase == GuidedRun.Phase.COMPLETED) "LIVE_MAPS" else "REVIEW")
+                    if (run.phase == GuidedRun.Phase.COMPLETED) {
+                        fieldHold = run.steps.last().probe
+                        fieldHoldUntil = SystemClock.elapsedRealtime() + 120_000
+                        forwarding = true; prefs.edit().putBoolean("forwarding", true).apply()
+                        AppState.roundaboutsAllowed = false
+                        AppState.requestMapsSnapshot?.invoke()
+                    } else {
+                        session.stop(); targetAddress = null; transport.close()
+                    }
+                }
+            } else {
+                // Standalone tests release the connection when they finish.
+                session.stop(); targetAddress = null; transport.close()
+            }
         }
         AppState.notifyChanged()
         if (phaseChanged && !destroying) startForegroundNotification()
@@ -365,6 +496,7 @@ class PodService : Service(), BleTransport.Listener {
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onDestroy() {
         destroying = true
+        if (fieldId != null) finishField("Connection service ended", interrupted = true)
         activeGuided?.fail("Connection service stopped; partial report saved"); publishGuided(); releaseTestWakeLock()
         handler.removeCallbacksAndMessages(null)
         mapsConnecting = false; selectingPod = false; AppState.mapsStatus = MapsRoute.Status.WAITING
@@ -379,7 +511,7 @@ class PodService : Service(), BleTransport.Listener {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel("pod", "Tripper connection", NotificationManager.IMPORTANCE_LOW))
         val open = PendingIntent.getActivity(this, 0,
-            Intent(this, if (activeGuided != null) GuidedTestActivity::class.java else if (forwarding) MapsNavigationActivity::class.java else MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+            Intent(this, if (fieldId != null) FieldTestActivity::class.java else if (activeGuided != null) GuidedTestActivity::class.java else if (forwarding) MapsNavigationActivity::class.java else MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         val stop = PendingIntent.getService(this, 0, Intent(this, PodService::class.java).setAction("STOP"), PendingIntent.FLAG_IMMUTABLE)
         val detail = activeGuided?.let { if (it.phase == GuidedRun.Phase.PHOTO_REQUIRED) "Photo needed: ${it.current?.title}" else "Guided Pod test: ${it.phase}" }
             ?: "Experimental Tripper Pod connection"

@@ -1,14 +1,14 @@
 package io.opentripper.core
 
 /** A stationary test only. Transmission success never implies a correct visual rendering. */
-class GuidedRun(val steps: List<Step>, private val now: () -> Long) {
+class GuidedRun(val steps: List<Step>, private val now: () -> Long, val durationMs: Long = MAX_DURATION_MS) {
     data class Step(val id: String, val title: String, val probe: PodProbe)
     data class Result(var writes: Int = 0, var firstWriteAt: Long? = null,
         var photo: String? = null, var skipped: Boolean = false)
     enum class Phase { CONNECTING, SENDING, SETTLING, PHOTO_REQUIRED, COMPLETED, FAILED, CANCELLED }
     val results = steps.map { Result() }
     val startedAt = now()
-    val deadline = startedAt + MAX_DURATION_MS
+    val deadline = startedAt + durationMs
     var phase = Phase.CONNECTING; private set
     var index = 0; private set
     var reason: String? = null; private set
@@ -18,7 +18,7 @@ class GuidedRun(val steps: List<Step>, private val now: () -> Long) {
     val current get() = steps.getOrNull(index)
     val screen get() = current?.probe?.takeIf { phase in setOf(Phase.SENDING, Phase.SETTLING, Phase.PHOTO_REQUIRED) }
 
-    init { require(steps.isNotEmpty() && steps.size <= 20 && steps.map { it.id }.distinct().size == steps.size) }
+    init { require(durationMs in 5000..1_200_000); require(steps.isNotEmpty() && steps.size <= 64 && steps.map { it.id }.distinct().size == steps.size) }
     fun connected() {
         if (phase != Phase.CONNECTING) return
         phase = Phase.SENDING; stepStarted = now()
@@ -35,7 +35,7 @@ class GuidedRun(val steps: List<Step>, private val now: () -> Long) {
     fun tick() {
         if (terminal) return
         when {
-            now() >= deadline -> fail("Test reached its ten-minute limit")
+            now() >= deadline -> fail("Test reached its time limit")
             phase == Phase.SENDING && now() - stepStarted >= 5000 -> fail("No successful screen write was confirmed")
             phase == Phase.SETTLING && now() - results[index].firstWriteAt!! >= SETTLE_MS -> {
                 phase = Phase.PHOTO_REQUIRED; photoRequestedAt = now()

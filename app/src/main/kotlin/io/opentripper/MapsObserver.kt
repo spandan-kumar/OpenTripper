@@ -10,7 +10,11 @@ class MapsObserver : NotificationListenerService() {
     override fun onListenerConnected() {
         AppState.observerConnected = true
         AppState.notifyChanged()
-        AppState.requestMapsSnapshot = { activeNotifications?.forEach(::onNotificationPosted); Unit }
+        AppState.requestMapsSnapshot = {
+            try { activeNotifications?.forEach { publish(it, snapshot = true) } }
+            catch (_: SecurityException) { onListenerDisconnected() }
+            Unit
+        }
         AppState.requestMapsSnapshot?.invoke()
     }
     override fun onListenerDisconnected() {
@@ -26,13 +30,14 @@ class MapsObserver : NotificationListenerService() {
         AppState.notifyChanged()
         super.onDestroy()
     }
-    override fun onNotificationPosted(sbn: StatusBarNotification) {
+    override fun onNotificationPosted(sbn: StatusBarNotification) = publish(sbn, snapshot = false)
+    private fun publish(sbn: StatusBarNotification, snapshot: Boolean) {
         if (sbn.packageName != MapsParser.PACKAGE) return
         val extras = sbn.notification.extras
         val textKeys = listOf(Notification.EXTRA_TITLE, Notification.EXTRA_TEXT, Notification.EXTRA_BIG_TEXT, Notification.EXTRA_SUB_TEXT)
         val lines = textKeys.mapNotNull { extras.getCharSequence(it)?.toString() } +
             (extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.map { it.toString() } ?: emptyList())
-        AppState.onMapsPost?.invoke(MapsNotification(sbn.packageName, sbn.key, sbn.isOngoing, lines))
+        AppState.onMapsPost?.invoke(MapsNotification(sbn.packageName, sbn.key, sbn.isOngoing, lines, snapshot))
     }
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         if (sbn.packageName == MapsParser.PACKAGE) AppState.onMapsRemove?.invoke(sbn.key)

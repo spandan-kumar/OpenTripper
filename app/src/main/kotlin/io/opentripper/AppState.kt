@@ -6,7 +6,7 @@ import io.opentripper.core.PodProbe
 import io.opentripper.core.PodSession
 import io.opentripper.core.GuidedRun
 
-/** In-process UI state, accessed on main looper only. No notification contents go to disk or network. */
+/** In-process UI state, accessed on main looper only. Only an explicitly enabled field session can save bounded Maps instruction text locally. No network use. */
 object AppState {
     var status = "Stopped"; private set
     var devices: List<Pair<String, String>> = emptyList(); private set
@@ -15,6 +15,9 @@ object AppState {
     var mapsStatus = io.opentripper.core.MapsRoute.Status.WAITING
     var mapsConnecting = false
     var mapsChoosingPod = false
+    var fieldSessionId: String? = null
+    var fieldPhase = ""
+    var fieldLivePhotoName: String? = null
     var sessionState = PodSession.State.STOPPED
     var screenMessage = "No screen is being forwarded"
     var completedProbe: PodProbe? = null

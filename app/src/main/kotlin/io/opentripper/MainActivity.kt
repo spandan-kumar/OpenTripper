@@ -42,6 +42,7 @@ class MainActivity : Activity() {
         text("OpenTripper", 30f)
         text("Experimental • Royal Enfield Tripper Pod (RE_DISP). Tripper Dash is unsupported.")
         status = text("Stopped", 19f)
+        button("One-visit test kit — all checks & one report") { startActivity(Intent(this, FieldTestActivity::class.java)) }
         button("Start Maps navigation") { startActivity(Intent(this, MapsNavigationActivity::class.java)) }
         button("Start automatic Pod test") { startActivity(Intent(this, GuidedTestActivity::class.java).putExtra("start", true)) }
         button("Guided test, camera & reports") { startActivity(Intent(this, GuidedTestActivity::class.java)) }
@@ -66,7 +67,7 @@ class MainActivity : Activity() {
         text("Google Maps observer", 22f)
         text("English instructions only. Notification formats can change. Check the preview before enabling forwarding. " +
             "Unknown or stale text stops screen refresh; the Pod may disconnect after about 5 seconds. " +
-            "Notification access is broad, but this app filters for Google Maps and keeps no notification history.")
+            "Notification access is broad, but this app filters for Google Maps. The test kit can save Maps wording if you enable its diagnostic option.")
         button("Open notification access settings") { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
         button("Start Maps preview") { command("PREVIEW") }
         navigation = text("No recognized maneuver")

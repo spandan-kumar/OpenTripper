@@ -6,7 +6,7 @@ import org.junit.Test
 class GuidedRunTest {
     private class Rig(experimental: Boolean = false) {
         var time = 1000L
-        val run = GuidedRun(GuidedRun.plan(DrivingSide.LEFT, experimental)) { time }
+        val run = GuidedRun(GuidedRun.plan(DrivingSide.LEFT, experimental), now = { time })
         fun advance(ms: Long) { time += ms; run.tick() }
         fun photoReady() {
             run.connected(); run.written(run.current!!.probe.packet()); advance(GuidedRun.SETTLE_MS)

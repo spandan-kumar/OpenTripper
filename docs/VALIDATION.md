@@ -1,5 +1,33 @@
 # OpenTripper validation
 
+## One-visit test kit — 31 October 2026
+
+Version `0.5.0-experimental` (code 5) bundles the remaining tests in one installation. Recommended selection: 33 new checkpoints (nine roundabouts, twelve other junction categories, nine display tests and three synthetic Maps-text replay cases). Repeating the seven photographed baseline screens is optional. Groups can be retried in the same session, or the user can continue only checks without accepted photos. The outer report retains every child attempt, Maps diagnostics and live photos in one ZIP. The kit uses a twenty-minute screen-run limit and thirty-minute outer-session limit; legacy standalone guided tests retain their ten-minute limit.
+
+### Automated and build evidence
+
+- `./gradlew :core:test :app:assembleDebug :app:lintDebug --console=plain` passed with JDK 17 and Android SDK 35.
+- **66 JVM tests passed**, zero failures/errors/skips. New coverage checks the full/default plan, traffic-side roundabout exits 1–9, distinct display parameters, unique valid frames, selective retries, skipping already-photographed checkpoints, bounded expanded runs and parser-derived sample commands.
+- Diagnostic tests verify that text capture off excludes actual instruction wording and notification keys; explicit text capture is bounded to eight lines of at most 512 characters; other app packages are excluded even with text capture enabled; snapshots are labelled.
+- Lint: **0 errors, 63 warnings**. Warnings are the existing English-string/localization, pinned dependency and SDK-compatibility categories; no baseline was added.
+- Final debug APK v2 signature verifies. SHA-256: `64cc7a81335eb4d04c1f904f44e47f0dd59c790c5bd03cfaefea8f0d5c081373`.
+
+### Actual Pixel 8 checks
+
+The final APK was installed successfully, pulled back from the phone and verified byte-for-byte against the build hash above. The final test-kit screen was reopened and showed the four recommended groups, baseline unchecked, text capture unchecked, correct 33-checkpoint count and enabled Start button.
+
+The test workflow was exercised on the phone, without a Pod connected:
+
+- Started the recommended selection: the UI and child report showed 33 planned screens. Stopped discovery and preserved the partial attempt.
+- Retried just the roundabout group: a separate nine-screen child attempt was appended to the same session, with the earlier attempt retained.
+- Entered the kit's live Maps stage through its Maps screen, without replacing the outer session. Granted notification-listener access through the actual Android settings/confirmation UI; the app then showed the reader connected.
+- Opened the live-photo camera, captured and accepted a practice JPEG. It recorded capture/acceptance times and correctly recorded `WAITING`/`STOPPED` rather than inventing a recognized maneuver or connected Pod.
+- Force-stopped and reopened the app: the session showed `INTERRUPTED` and retained two child attempts plus the practice photo. Continuing unphotographed checks created another 33-screen attempt, as no checkpoint photo evidence existed in this QA session.
+- Finished and opened Android's share sheet. Dismissed without sending. Read the actual ZIP back and verified its integrity: one `suite.json`, three child reports (33, 9 and 33 steps) and one live JPEG. All child phases were `CANCELLED`; all hardware write counts were zero. The final report recorded that the notification reader was connected.
+- Removed only the known QA session/attempts and practice photo from the phone after verification. Preserved the user's original completed Hunter report and all seven original photos, and left the test kit ready for a new session. Notification access remains configured for the requested Maps checks.
+
+No real Maps route was started and no new Pod icon was validated during these phone checks. The two-minute handoff hold, connection reuse across completed screen checks, correct live direction rendering, complete checkpoint-photo hardware collection and real Maps update cadence still need the user's stationary bike session. Optional instruction wording is off by default; enabling its clearly labelled checkbox allows local Maps text in the shared evidence. Events are bounded to the latest 120 and live photos to twenty. Finishing a kit records the end of collection, not an automatic pass of every test.
+
 ## Maps mode update — 31 October 2026
 
 Version `0.4.0-experimental` (code 4) adds a dedicated Maps connection screen. It requests Bluetooth/optional notification permission, guides the user through notification-listener access, starts the existing bounded Pod discovery/selection flow, accepts the Pod PIN and opens Google Maps for the user to choose a route. It shows source states for waiting, recognized, unsupported, expired and removed instructions. The notification permission check includes an API-26 fallback; Google Maps package visibility is declared. Entering this mode clears experimental roundabout opt-in.

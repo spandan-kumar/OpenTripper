@@ -3,7 +3,7 @@ package io.opentripper.core
 import java.util.Locale
 import kotlin.math.roundToInt
 
-data class MapsNotification(val packageName: String, val key: String, val ongoing: Boolean, val lines: List<String>)
+data class MapsNotification(val packageName: String, val key: String, val ongoing: Boolean, val lines: List<String>, val snapshot: Boolean = false)
 data class MapsManeuver(val maneuver: Maneuver, val meters: Int, val roundaboutExit: Int? = null) {
     fun cue(side: DrivingSide) = ManeuverCue(maneuver, roundaboutExit, side)
 }
