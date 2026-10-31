@@ -2,6 +2,8 @@
 
 Investigated 31 October 2026. Target: the original small `RE_DISP` Pod on the user's Hunter, not the Wi-Fi Tripper Dash. This records a bounded investigation, not a completed firmware replacement.
 
+Follow-up: [firmware and internal-photo findings](POD_FIRMWARE_INVESTIGATION.md) trace the updater further, confirm a failed metadata lookup inside the signed-in official app, and identify likely MCU/debug-access leads from the user-supplied FCC photos. Statements about no backend request below describe this first pass only.
+
 ## Result
 
 OpenTripper currently selects graphics and supplies values to the Pod's existing firmware over BLE. It does not upload a phone-rendered screen. Our seven actual Hunter photos demonstrate distinct ordinary, sharp, slight, fork, exit and U-turn graphics, including a separate following-turn arrow: see [hardware evidence](HUNTER_RESULT_2026-10-31.md).
