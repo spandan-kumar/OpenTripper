@@ -84,4 +84,48 @@ class MapsParserTest {
         assertEquals(50, route.current(16001)?.meters)
         route.clear(); assertNull(route.current(16002))
     }
+    @Test fun sourceStatusDistinguishesNoRouteUnsupportedExpiredAndRemoved() {
+        val route = MapsRoute()
+        assertEquals(MapsRoute.Status.WAITING, route.status)
+        route.post(note("Rerouting…"), 0)
+        assertEquals(MapsRoute.Status.UNSUPPORTED, route.status)
+        assertNull(route.current(100))
+        assertEquals(MapsRoute.Status.UNSUPPORTED, route.status)
+        route.post(note("100 m", "Turn left"), 200)
+        assertEquals(MapsRoute.Status.RECOGNIZED, route.status)
+        assertNull(route.current(15200))
+        assertEquals(MapsRoute.Status.EXPIRED, route.status)
+        route.post(note("50 m", "Turn right"), 16000)
+        route.remove("nav")
+        assertEquals(MapsRoute.Status.REMOVED, route.status)
+        route.clear(); assertEquals(MapsRoute.Status.WAITING, route.status)
+    }
+    @Test fun irrelevantPostsCannotChangeSourceStatusOrRetainStaleArrows() {
+        val route = MapsRoute()
+        route.post(note("100 m", "Turn left", pkg = "other.app"), 0)
+        route.post(note("Nearby places", ongoing = false), 0)
+        assertEquals(MapsRoute.Status.WAITING, route.status)
+        route.post(note("100 m", "Turn left"), 100)
+        route.post(note("Nearby places", key = "other"), 200)
+        assertEquals(MapsRoute.Status.RECOGNIZED, route.status)
+        assertEquals(Maneuver.LEFT, route.current(300)?.maneuver)
+        route.post(note("Rerouting…"), 400)
+        assertNull(route.current(400))
+        assertEquals(MapsRoute.Status.UNSUPPORTED, route.status)
+        route.remove("other"); assertEquals(MapsRoute.Status.UNSUPPORTED, route.status)
+    }
+
+    @Test fun parsedDirectionsSelectTheSevenPhotographedHunterIconCodes() {
+        val cases = listOf("Turn left" to 0x14, "Turn right" to 0x15,
+            "Turn sharp left" to 0x16, "Slight left" to 0x18,
+            "Keep left at the fork" to 0x06, "Take the exit on the left" to 0x2e,
+            "Make a U-turn" to 0x1a)
+        for ((instruction, icon) in cases) {
+            val parsed = MapsParser.parse(note("100 m", instruction))!!
+            val packet = TripperProtocol.navigation(parsed.cue(DrivingSide.LEFT), parsed.meters)
+            assertEquals(instruction, icon, packet[2].toInt() and 255)
+            assertTrue(TripperProtocol.isValid(packet))
+        }
+    }
+
 }

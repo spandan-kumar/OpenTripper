@@ -1,4 +1,4 @@
-# OpenTripper 0.3 — guided Pod tests with photos
+# OpenTripper 0.4 — Maps connection and guided Pod tests
 
 Repository: [spandan-kumar/OpenTripper](https://github.com/spandan-kumar/OpenTripper).
 Local workspace: `/Users/Spandan/github.com/spandan-kumar/OpenTripper`.
@@ -8,6 +8,16 @@ A Kotlin Android app for the Royal Enfield **Tripper Pod** advertising as `RE_DI
 **Experimental. The standard seven-checkpoint run was completed on a Hunter Pod on 31 October 2026: photos show distinct turn/fork/exit/U-turn graphics and the small following-turn arrow. Roundabouts and live navigation remain unverified. Tripper Dash is unsupported.**
 
 See [the actual Hunter hardware result](docs/HUNTER_RESULT_2026-10-31.md) for the observed graphics and remaining limits.
+
+## Connect real Google Maps directions
+
+Open **Start Maps navigation → Connect Pod & forward Maps**. The setup requests Bluetooth permission, optional connection-notification permission and Android notification-listener access. Enable OpenTripper in that settings page, then return. On Android 8–11, BLE also needs location permission/settings. This mode does not request camera access.
+
+Turn on the Hunter ignition. The app scans for up to 30 seconds and uses your saved verified Pod or the only Pod found; if several appear, choose yours. Enter the displayed PIN when prompted. Tap **Open Google Maps / choose destination**, start Maps navigation, then return to OpenTripper while parked. Check the recognized direction/distance and the physical Pod. **Remember Pod — I saw the correct direction** enables the existing resume handshake for later connections; a saved PIN is never needed.
+
+The new screen distinguishes missing notification access, waiting for Android's reader, no navigation notification yet, recognized directions, unreadable notifications, expired directions and removed notifications. Existing strict English parsing sends specific maneuver categories; an unsupported instruction never defaults to a straight arrow. The fifteen-second freshness limit remains: an unchanged notification that Maps does not refresh can expire, stopping screen updates and potentially requiring a Pod reconnect. This still needs real Maps route testing. This mode starts with experimental roundabouts disabled; the separate lab retains its opt-in tests.
+
+Use **Stop navigation connection** when finished. Reconnection after a drop is manual. Opening Google Maps does not choose or start a route automatically. Live route tracking is performed by Maps; OpenTripper does not calculate a route or use GPS itself.
 
 ## What is implemented
 

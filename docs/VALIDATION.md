@@ -1,5 +1,18 @@
 # OpenTripper validation
 
+## Maps mode update — 31 October 2026
+
+Version `0.4.0-experimental` (code 4) adds a dedicated Maps connection screen. It requests Bluetooth/optional notification permission, guides the user through notification-listener access, starts the existing bounded Pod discovery/selection flow, accepts the Pod PIN and opens Google Maps for the user to choose a route. It shows source states for waiting, recognized, unsupported, expired and removed instructions. The notification permission check includes an API-26 fallback; Google Maps package visibility is declared. Entering this mode clears experimental roundabout opt-in.
+
+- `./gradlew :core:test :app:assembleDebug :app:lintDebug --console=plain` passed with JDK 17 and Android SDK 35.
+- **57 JVM tests passed**, zero failures/errors/skips. Added coverage distinguishes Maps source states, preserves active instructions against unrelated notifications, clears unsupported/expired directions and checks that parsed English directions select the seven Hunter-photographed icon codes.
+- Lint: **0 errors, 51 warnings**, covering the existing string/localization, dependency pin and SDK compatibility categories. No baseline added.
+- Final debug APK v2 signature verifies. SHA-256: `e4201fac5b3f71ae4601f48356b6f703feea10f0f4a0484d4b1196c3919f34ed`.
+- An intermediate 0.4 APK install reported success, but no usable UI inspection completed. The Pixel's wireless ADB connection subsequently dropped; the final APK install failed with `device offline`. **Final on-device installation and UI verification are not confirmed.**
+- No real Google Maps route was started or captured during this change. No Maps-to-Pod navigation result is claimed. The seven photographed hardware results below still apply to the earlier stationary 0.3 run.
+
+The fifteen-second route freshness policy remains unchanged. Real Maps notification formats, update cadence during long instructions, source text vs icon availability, background behavior, pairing in the new screen and roundabout behavior still require device/Pod validation. The new screen makes these gaps visible; it does not add GPS routing, following-turn extraction from Maps or arbitrary display drawing.
+
 ## Hardware update — 31 October 2026
 
 The standard guided test completed on the user's Hunter Pod with all seven photos and 46 successful screen writes. Reviewed photographs show distinct ordinary/sharp/slight turns, fork, exit, U-turn and a small following-right arrow. See [the full hardware result](HUNTER_RESULT_2026-10-31.md). Roundabouts and live navigation remain unverified.

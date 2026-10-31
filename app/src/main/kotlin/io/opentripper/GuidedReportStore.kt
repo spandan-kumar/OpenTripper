@@ -44,7 +44,7 @@ class GuidedReportStore(private val context: Context) {
                 .put("packetHex", step.probe.packet().joinToString(" ") { "%02X".format(it.toInt() and 255) }))
         }
         val report = JSONObject().put("schemaVersion", 1).put("runId", id)
-            .put("appVersion", "0.3.0-experimental").put("phoneModel", Build.MODEL).put("androidApi", Build.VERSION.SDK_INT)
+            .put("appVersion", "0.4.0-experimental").put("phoneModel", Build.MODEL).put("androidApi", Build.VERSION.SDK_INT)
             .put("startedAt", previous?.optString("startedAt") ?: Instant.now().toString())
             .put("updatedAt", Instant.now().toString()).put("phase", run.phase.name)
             .put("reason", run.reason ?: JSONObject.NULL).put("elapsedMs", SystemClock.elapsedRealtime() - run.startedAt)

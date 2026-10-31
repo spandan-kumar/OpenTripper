@@ -23,8 +23,16 @@ class PodService : Service(), BleTransport.Listener {
     private val guidedEvents = ArrayDeque<String>()
     private var guidedSignature = ""
     private var discoveryScheduled = false
+    private var mapsConnecting = false
+        set(value) { field = value; AppState.mapsConnecting = value }
+    private val awaitingPod get() = activeGuided?.phase == GuidedRun.Phase.CONNECTING || mapsConnecting
+    private var discoveryToken = 0
     private var selectingPod = false
-        set(value) { field = value; AppState.guidedChoosingPod = value }
+        set(value) {
+            field = value
+            AppState.guidedChoosingPod = value && activeGuided != null
+            AppState.mapsChoosingPod = value && mapsConnecting
+        }
     private var destroying = false
     private var testWakeLock: PowerManager.WakeLock? = null
     private val reports by lazy { GuidedReportStore(this) }
@@ -89,16 +97,23 @@ class PodService : Service(), BleTransport.Listener {
         }
         try {
             startForegroundNotification()
-            if (intent?.action in setOf("SCAN", "CONNECT", "FORWARD", "PROBE", "STOP_PROBE")) cancelGuided()
+            if (intent?.action in setOf("SCAN", "CONNECT", "FORWARD", "PROBE", "STOP_PROBE", "MAPS_START")) cancelGuided()
             // A later manual action takes ownership of the service after a completed run.
             if (intent?.action?.startsWith("GUIDE_") != true && guided?.terminal == true) {
                 guided = null; guidedId = null
             }
+            if (intent?.action in setOf("SCAN", "CONNECT", "PROBE", "GUIDE_START")) {
+                mapsConnecting = false; selectingPod = false; discoveryToken++
+            }
             when (intent?.action) {
+                "MAPS_START" -> startMaps()
+                "MAPS_CONNECT" -> intent.getStringExtra("address")?.let { address ->
+                    if (mapsConnecting && selectingPod && AppState.devices.any { it.first == address }) connectDiscovered(address)
+                }
                 "GUIDE_START" -> startGuided(intent.getBooleanExtra("experimental", false))
                 "GUIDE_CONNECT" -> intent.getStringExtra("address")?.let { address ->
                     if (activeGuided?.phase == GuidedRun.Phase.CONNECTING && selectingPod &&
-                        AppState.devices.any { it.first == address }) connectGuided(address)
+                        AppState.devices.any { it.first == address }) connectDiscovered(address)
                 }
                 "GUIDE_CANCEL" -> { cancelGuided(); refreshRoute() }
                 "GUIDE_PHOTO", "GUIDE_SKIP" -> {
@@ -184,6 +199,7 @@ class PodService : Service(), BleTransport.Listener {
     private fun refreshRoute() {
         val now = SystemClock.elapsedRealtime()
         val value = route.current(now)
+        if (AppState.mapsStatus != route.status) { AppState.mapsStatus = route.status; AppState.notifyChanged() }
         if (value != AppState.navigation) { AppState.navigation = value; AppState.notifyChanged() }
         if (probe != null && now >= probeUntil) {
             probe = null
@@ -239,7 +255,7 @@ class PodService : Service(), BleTransport.Listener {
         guidedId = reports.create()
         guided = GuidedRun(GuidedRun.plan(side, experimental), SystemClock::elapsedRealtime)
         AppState.guidedRun = guided; AppState.guidedRunId = guidedId
-        guidedEvents.clear(); guidedSignature = ""; discoveryScheduled = false; selectingPod = false
+        guidedEvents.clear(); guidedSignature = ""; discoveryScheduled = false; selectingPod = false; discoveryToken++
         guidedEvent("Stationary guided test started; experimental=$experimental")
         val power = getSystemService(PowerManager::class.java)
         testWakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OpenTripper:guided-test").apply {
@@ -256,26 +272,41 @@ class PodService : Service(), BleTransport.Listener {
         }
         publishGuided(); refreshRoute()
     }
-    private fun connectGuided(address: String) {
-        if (activeGuided?.phase != GuidedRun.Phase.CONNECTING || targetAddress != null) return
+    private fun startMaps() {
+        AppState.roundaboutsAllowed = false
+        clearProbe(clearEvidence = true)
+        forwarding = true; prefs.edit().putBoolean("forwarding", true).apply()
+        discoveryToken++; discoveryScheduled = false; selectingPod = false
+        if (targetAddress != null && session.state in setOf(PodSession.State.READY, PodSession.State.WAITING_PIN, PodSession.State.HANDSHAKE)) {
+            mapsConnecting = false
+        } else {
+            session.stop(); targetAddress = null; mapsConnecting = true
+            AppState.status("Looking for your Pod; turn the Hunter ignition on")
+            transport.scan(30_000)
+        }
+        AppState.requestMapsSnapshot?.invoke()
+        refreshRoute(); AppState.notifyChanged(); startForegroundNotification()
+    }
+    private fun connectDiscovered(address: String) {
+        if (!awaitingPod || targetAddress != null) return
         selectingPod = false; targetAddress = address
         guidedEvent("Pod selected; starting BLE connection")
         AppState.status("Connecting to Pod; PIN entry will appear here if needed")
         transport.connect(address)
     }
     override fun onDeviceFound(address: String) {
-        if (activeGuided?.phase != GuidedRun.Phase.CONNECTING || targetAddress != null) return
+        if (!awaitingPod || targetAddress != null) return
         val saved = prefs.getString("verified_address", null)
         if (saved != null) {
-            if (address == saved) connectGuided(address)
+            if (address == saved) connectDiscovered(address)
             return
         }
         if (!discoveryScheduled) {
             discoveryScheduled = true
-            val id = guidedId
+            val token = discoveryToken
             handler.postDelayed({
-                if (guidedId == id && activeGuided?.phase == GuidedRun.Phase.CONNECTING && targetAddress == null) {
-                    if (AppState.devices.size == 1) connectGuided(AppState.devices.single().first)
+                if (discoveryToken == token && awaitingPod && targetAddress == null) {
+                    if (AppState.devices.size == 1) connectDiscovered(AppState.devices.single().first)
                     else if (AppState.devices.size > 1) {
                         selectingPod = true; AppState.status("More than one Pod found; select yours to continue")
                     }
@@ -284,7 +315,7 @@ class PodService : Service(), BleTransport.Listener {
         } else if (selectingPod) AppState.notifyChanged()
     }
     override fun onScanFinished() {
-        if (activeGuided?.phase != GuidedRun.Phase.CONNECTING || targetAddress != null) return
+        if (!awaitingPod || targetAddress != null) return
         if (selectingPod && AppState.devices.isNotEmpty()) return
         onFailure(if (prefs.getString("verified_address", null) != null)
             "Saved Pod not found. Cycle the ignition and try again, or forget the saved Pod."
@@ -318,12 +349,14 @@ class PodService : Service(), BleTransport.Listener {
         testWakeLock?.let { if (it.isHeld) it.release() }; testWakeLock = null
     }
     override fun onReady(address: String) {
+        mapsConnecting = false; selectingPod = false
         session.start(prefs.getString("verified_address", null) == address)
     }
     override fun onWriteComplete(success: Boolean) { session.onWriteComplete(success) }
     override fun onFailure(reason: String) {
         activeGuided?.fail(reason); guidedEvent(reason); publishGuided()
-        clearProbe(); session.stop(); transport.close(); AppState.status(reason)
+        mapsConnecting = false; selectingPod = false; discoveryToken++
+        clearProbe(); session.stop(); targetAddress = null; transport.close(); AppState.status(reason)
     }
     override fun onEvent(message: String) {
         if (activeGuided != null) guidedEvent(message)
@@ -334,6 +367,7 @@ class PodService : Service(), BleTransport.Listener {
         destroying = true
         activeGuided?.fail("Connection service stopped; partial report saved"); publishGuided(); releaseTestWakeLock()
         handler.removeCallbacksAndMessages(null)
+        mapsConnecting = false; selectingPod = false; AppState.mapsStatus = MapsRoute.Status.WAITING
         session.stop(); transport.close(); route.clear()
         clearProbe(); AppState.roundaboutsAllowed = false
         AppState.screenMessage = "No screen is being forwarded"
@@ -345,7 +379,7 @@ class PodService : Service(), BleTransport.Listener {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel("pod", "Tripper connection", NotificationManager.IMPORTANCE_LOW))
         val open = PendingIntent.getActivity(this, 0,
-            Intent(this, if (activeGuided != null) GuidedTestActivity::class.java else MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+            Intent(this, if (activeGuided != null) GuidedTestActivity::class.java else if (forwarding) MapsNavigationActivity::class.java else MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
         val stop = PendingIntent.getService(this, 0, Intent(this, PodService::class.java).setAction("STOP"), PendingIntent.FLAG_IMMUTABLE)
         val detail = activeGuided?.let { if (it.phase == GuidedRun.Phase.PHOTO_REQUIRED) "Photo needed: ${it.current?.title}" else "Guided Pod test: ${it.phase}" }
             ?: "Experimental Tripper Pod connection"

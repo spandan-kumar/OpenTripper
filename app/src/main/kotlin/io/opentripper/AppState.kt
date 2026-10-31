@@ -12,6 +12,9 @@ object AppState {
     var devices: List<Pair<String, String>> = emptyList(); private set
     var navigation: MapsManeuver? = null
     var observerConnected = false
+    var mapsStatus = io.opentripper.core.MapsRoute.Status.WAITING
+    var mapsConnecting = false
+    var mapsChoosingPod = false
     var sessionState = PodSession.State.STOPPED
     var screenMessage = "No screen is being forwarded"
     var completedProbe: PodProbe? = null

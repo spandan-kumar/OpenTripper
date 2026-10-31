@@ -77,19 +77,24 @@ object MapsParser {
 
 /** Tracks one active navigation notification. Unrelated Maps notifications cannot clear it. */
 class MapsRoute {
+    enum class Status { WAITING, RECOGNIZED, UNSUPPORTED, EXPIRED, REMOVED }
+    var status = Status.WAITING; private set
     var key: String? = null; private set
     var value: MapsManeuver? = null; private set
     var expiresAt: Long = 0; private set
     fun post(notification: MapsNotification, now: Long) {
         if (notification.packageName != MapsParser.PACKAGE) return
         val parsed = MapsParser.parse(notification)
-        if (parsed != null) { key = notification.key; value = parsed; expiresAt = now + 15_000 }
-        else if (notification.key == key) clear()
+        if (parsed != null) {
+            key = notification.key; value = parsed; expiresAt = now + 15_000; status = Status.RECOGNIZED
+        } else if (notification.key == key || (key == null && notification.ongoing)) {
+            clear(); key = notification.key; status = Status.UNSUPPORTED
+        }
     }
-    fun remove(removedKey: String) { if (key == removedKey) clear() }
+    fun remove(removedKey: String) { if (key == removedKey) { clear(); status = Status.REMOVED } }
     fun current(now: Long): MapsManeuver? {
-        if (now >= expiresAt) clear()
+        if (value != null && now >= expiresAt) { clear(); status = Status.EXPIRED }
         return value
     }
-    fun clear() { key = null; value = null; expiresAt = 0 }
+    fun clear() { key = null; value = null; expiresAt = 0; status = Status.WAITING }
 }
