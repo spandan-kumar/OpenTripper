@@ -1,0 +1,107 @@
+{
+  "checked_date": "2026-11-01",
+  "target": "Public RE DOL V0_17_BETA26 installer linked by RE SOP 38; not a Pod firmware image",
+  "source_document": "https://static.nhtsa.gov/odi/tsbs/2026/MC-11028676-0001.pdf",
+  "download_page": "https://drive.google.com/file/d/1PNaCvEJga2l7_1fFxWIat_HI56vW-rp2/view",
+  "installer": {
+    "filename": "ROYAL_ENFIELD_DOL-V0_17_Beta26_install.exe",
+    "bytes": 32399696,
+    "sha256": "e35d1fba078be20e56c2141d12b881ea29dd5dc1353e0a54ee660c030dbc7ae9"
+  },
+  "method": {
+    "target_executed": false,
+    "offline_extraction": "GEA header/member parsing and LZGE decoding based on upstream Gentee format/source, with a local 64-bit adaptation; no installer execution",
+    "format_source": "https://github.com/gentee/c-gentee/tree/f231d698ef7ed54406888619427db7432dccec0e",
+    "inner_setup_sha256": "19920016b7fef04a25dc31c4aed18e4389084a58a23164ebe47a1782b32591be",
+    "application_members": 950,
+    "extracted_members": 950,
+    "member_crc_checks_passed": 950,
+    "name_collisions": 0,
+    "term_search_encodings": [
+      "ASCII",
+      "UTF-16LE",
+      "UTF-16BE"
+    ],
+    "search_matches": {
+      "Tripper": [],
+      "JDCP": [],
+      "RE_DISP": [],
+      "01FF0100-BA5E-F4EE-5CA1-EB1E5E4B1CE0": []
+    },
+    "firmware_extension_candidates": []
+  },
+  "selected_artifacts": [
+    {
+      "name": "RE_VISTEON_Programming.vi",
+      "folder": "data",
+      "size": 1576894,
+      "sha256": "bd47b17db9bec0443c874f3001d9e9bcefe8b7a412b3042b59b8c28817c4c9f3",
+      "ascii_anchors": [
+        {
+          "text": "VISTEON Cluster Programming",
+          "file_offset": 869020
+        },
+        {
+          "text": "VISTEON_P3K",
+          "file_offset": 888725
+        },
+        {
+          "text": "VISTEON_P4D",
+          "file_offset": 888740
+        },
+        {
+          "text": "VISTEON_FLASH_Procedure.vi",
+          "file_offset": 28583
+        },
+        {
+          "text": "CANID",
+          "file_offset": 1043
+        }
+      ]
+    },
+    {
+      "name": "VISTEON_FLASH_Procedure.vi",
+      "folder": "data",
+      "size": 220815,
+      "sha256": "f671ca438a897f7357da19cfed270939dba68a916ea48334cd36caadf0c8eb1d",
+      "ascii_anchors": [
+        {
+          "text": "CANID",
+          "file_offset": 1019
+        }
+      ]
+    },
+    {
+      "name": "ROYAL ENFIELD DOL.exe",
+      "folder": "",
+      "size": 221838,
+      "sha256": "c5c71e34a1a5de88eea447b8f0ffa03890cc7cde42abc1f0c1d9185cd6e9b3a9",
+      "ascii_anchors": []
+    },
+    {
+      "name": "DB_Vehicle_OEM_MOTOR.dat",
+      "folder": "data\\Vehicle Database",
+      "size": 243488,
+      "sha256": "e4c2c6752867300634c183629adab64a8f5bdcf1b3a8d0527077486d38cf454c",
+      "ascii_anchors": [
+        {
+          "text": "UDS_VISTEON_P3KIC_MARKET",
+          "file_offset": 223569
+        },
+        {
+          "text": "UDS_VISTEON_P4DIC_SRDRR",
+          "file_offset": 223595
+        }
+      ]
+    }
+  ],
+  "rea_resource_evidence_id": "ev_7e403aefdfbd876aae797f3fa80047ce302db80fc32c194d0139e867a123d199",
+  "limitations": [
+    "Member CRCs check extraction consistency, not vendor authenticity or firmware acceptance.",
+    "REA resource evidence covers outer PE resources only; GEA extraction and member searches are separate shell-based analysis.",
+    "Names and string anchors establish packaged components, not runtime reachability, compatible hardware or a successful flash.",
+    "Generic Bluetooth library/parameter strings do not establish the Pod BLE firmware transport.",
+    "No backend login, serial-number activation, firmware download or connection to a bike was attempted through DOL.",
+    "This is one 2024-linked package version; later or unpublished dealer tools remain uninspected."
+  ]
+}

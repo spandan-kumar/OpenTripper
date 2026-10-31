@@ -1,6 +1,6 @@
 # Stock Pod firmware and hardware investigation
 
-31 October 2026. Continues [the UI research](POD_UI_RESEARCH.md). Target: original small Tripper Pod, not Tripper Dash. No replacement firmware or changed Pod layout has been built, installed or demonstrated.
+31 October–1 November 2026. Continues [the UI research](POD_UI_RESEARCH.md). Target: original small Tripper Pod, not Tripper Dash. No replacement firmware or changed Pod layout has been built, installed or demonstrated. The latest [dealer-tool inspection](#public-dealer-tool-found-and-inspected) identifies DOL software and Visteon cluster components, but does not establish small-Pod coverage.
 
 ## What the supplied internal photographs add
 
@@ -131,3 +131,44 @@ The public [NACS-II ROYAL user manual (2019)](https://royalenfield-service.com/R
 The useful missing evidence is a demonstrated update of the **small `RE_DISP` Pod**: the actual tool/app name, firmware version before/after, and whether the technician uses Bluetooth or connects a cable directly to the Pod. If a cable is used, photographs of both ends and the connector it enters would distinguish it from the motorcycle diagnostic socket. A USB cable from a laptop into a diagnostic interface is not itself evidence of USB reaching the Pod.
 
 For UI work, prefer an original firmware file/backup and verified access to the Pod itself. Installing an official update alone would not establish acceptance of a modified image or provide a firmware read-back command. No port test, enumeration, wiring change or flashing was performed in this follow-up.
+
+## Public dealer tool found and inspected
+
+Further search, 1 November 2026, found a concrete manufacturer procedure and downloadable dealer package. This advances the dealer-tool question without resolving which tool, if any, services the original Pod.
+
+### Confirmed service workflow: RE DOL
+
+[Royal Enfield SOP 38, hosted by NHTSA](https://static.nhtsa.gov/odi/tsbs/2026/MC-11028676-0001.pdf), released 9 May 2024 and circulated 24 May, names **ROYAL ENFIELD DOL V0_17_BETA26**. Its target is the throttle-body ECU for P0106/P0196 faults on Meteor/Classic/Hunter/Bullet 350. It describes laptop USB to the DOL interface, DOL connection to the motorcycle, distributor activation of the interface serial number for online flashing, and model selection followed by EMS/FLASH. This establishes an actual dealer ECU workflow; it supplies no Pod connector pinout or Pod update procedure.
+
+The document links a publicly downloadable [DOL installer](https://drive.google.com/file/d/1PNaCvEJga2l7_1fFxWIat_HI56vW-rp2/view). It was retrieved and inspected offline:
+
+```text
+ROYAL_ENFIELD_DOL-V0_17_Beta26_install.exe
+32,399,696 bytes
+SHA-256 e35d1fba078be20e56c2141d12b881ea29dd5dc1353e0a54ee660c030dbc7ae9
+Inner ROYAL_ENFIELD_DOL_setup.exe: 14,515,345 bytes
+SHA-256 19920016b7fef04a25dc31c4aed18e4389084a58a23164ebe47a1782b32591be
+```
+
+The outer GEA package contains the application setup, USB-driver installer, LabVIEW runtime installer, MSXML installer and a batch file. Its application setup contains **950 members**. All 950 were extracted with their stored member CRCs verified; SHA-256 identities were retained and rechecked. CRC agreement checks extraction consistency, not authenticity or safety. No vendor executable, DLL, batch file or LabVIEW VI was executed or installed. The archive parser/decoder ran locally against file bytes, using the [upstream Gentee format/source](https://github.com/gentee/c-gentee/tree/f231d698ef7ed54406888619427db7432dccec0e) with a local 64-bit adaptation. REA separately inventoried the outer PE resources; that result is not the evidence for application behavior.
+
+### DOL contains Visteon cluster programming, but Pod support is unproven
+
+| Packaged observation | Bound on the conclusion |
+|---|---|
+| `RE_VISTEON_Programming.vi` contains a Visteon cluster-programming title, `VISTEON_P3K`/`VISTEON_P4D` selectors and a `VISTEON_FLASH_Procedure.vi` reference | DOL includes cluster-related components beyond the ECU SOP. A name/reference is not a demonstrated executable path or compatible Pod target |
+| The Visteon files contain `CANID` fields; the vehicle database contains P3K/P4D I-cluster UDS identifiers | Consistent with instrument-cluster diagnostics; does not establish a CAN connection to the separate navigation Pod |
+| Generic Bluetooth libraries and parameter fields also exist | Does not establish use of the Pod's BLE service or an original-Pod updater |
+| All 950 member payloads were searched for `Tripper`, `JDCP`, `RE_DISP` and the original Pod UART-service UUID as ASCII, UTF-16LE and UTF-16BE; zero matches | A bounded string search in this package/version, not proof that DOL or later/private dealer tools can never support the Pod |
+| No member filename ends in `.bin`, `.hex`, `.mot`, `.s19`, `.s28`, `.s37` or `.srec` | No obvious standalone firmware image in this package; embedded, compressed or server-delivered images remain possible |
+
+The selected file hashes, exact string offsets, extraction counts, source links and limitations are recorded in [the evidence summary](evidence/dealer-dol-2026-11-01.json). Vendor installers and extracted application files remain local; they are not committed. No dealer activation, backend authentication or firmware request was attempted through DOL.
+
+### Owner reports do not fill the transport gap
+
+- [A 2024 original-Pod report](https://www.reddit.com/r/royalenfield/comments/1dmizel/cannot_update_tripper_pod/) shows `RE_DISP` settings whose update controls do nothing. A proposed service visit has no documented successful update; a later reply reports replacing the Pod.
+- [A V07.05-to-V12.10 question](https://www.reddit.com/r/royalenfield/comments/1tlhzjr/its_possible_to_update_the_tripper_pod_firmware/) receives speculative service-centre advice, without a completed update or tool/cable identification.
+- [The Meteor “Software Update” thread](https://forum.classicmotorworks.com/index.php?topic=33329.0) describes a completed **ECU** update for the engine warning light. A later comment mentions Tripper V07.05, which makes snippets misleading; it does not document a Pod update. Direct fetch returned 403; indexed thread text was reviewed.
+- [RE's original-Pod FAQ](https://www.royalenfield.com/in/en/motorcycles/tripper/) recommends regular updates but supplies no dealer-tool identity or physical update procedure.
+
+**Status:** the dealer software is identified and its package inspected. The original Pod's actual dealer flashing method remains unresolved. The manufacturer app's BLE updater is still the identified phone-side firmware transport; its intended service-centre fallback must not be promoted into a verified cable procedure. The separate Hunter charging socket remains unsupported as a data entry point. For a redesigned stock UI, a matching Pod firmware image/backup and a recoverable write path are still missing.
