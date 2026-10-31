@@ -84,3 +84,50 @@ No access restriction was bypassed, account credential extracted, firmware insta
 5. **Only then establish a recoverable modification path.** Create an offline patch and a backup/restore procedure before considering installation. Device-side validation, bootloader protections and display-controller details remain open.
 
 This investigation now has a plausible hardware acquisition route despite the failed cloud lookup. It has not yet demonstrated changing stock layouts, fonts, colours or arbitrary graphics. No additional app build is required for the findings above.
+
+## Service-centre updates and the Hunter USB-C socket
+
+Follow-up, 1 November 2026 (research began 31 October). The user clarified that the USB-C port is the **separate phone-charging socket near the handlebar**, not a socket on the Pod casing.
+
+### The separate charger is not an established Pod data connection
+
+Royal Enfield's [Hunter rider guide](https://www.royalenfield.com/in/en/support/digital-quickstart/hunter-350/rider/) describes the charger/fast charger and states that no data transfer is enabled. The [earlier Hunter dual-channel owner's manual](https://www.royalenfield.com/content/dam/royal-enfield/hunter-350/owners-manual/hunter-350-dual-channel.pdf), printed pages 43-44 (PDF pages 45-46), locates the socket under the left switch and makes the same charging-only statement. That older manual describes Type-A; the newer [Hunter specification](https://www.royalenfield.com/content/dam/open-pdf/royal-enfield-hunter-350-technical-specifications-new.pdf) identifies Type-C fast charging. Do not transfer the old manual's charging rate or connector type to the user's Type-C unit. The current guide combines charging descriptions from different revisions; the exact physical charger circuit is uninspected.
+
+Having physical D+/D- contacts does not establish USB data communication. [TI's USB-C charging application note SLVA768](https://www.ti.com/lit/an/slva768/slva768.pdf), page 2, explains that dedicated charging ports can use these lines for electrical charging signatures without a USB data connection. This is a general explanation, not an identification of TI silicon inside this Hunter. Charge negotiation also does not establish a link to the Tripper processor.
+
+No wiring, USB enumeration, VID/PID or data trace from this user's socket has been collected. It is therefore unsupported to describe it as an ADB, DFU, UART or Pod service port. Based on the manufacturer's declared function, it is a low-priority firmware entry point.
+
+The [manufacturer's P4A/B OBD2B schematic](https://www.royalenfield.com/node/assets/WiringManual/code48/P4A_Schematic_Diagram_EuroV.pdf) was downloaded and visually inspected as a comparator. Its navigation module has battery positive, ground and ignition input. The USB chargers, main instrument cluster and diagnostic connector are separate; the CAN pair belongs to the main cluster rather than the navigation module. This is a different original-Pod-equipped model, not a verified Hunter loom or a pinout for the user's bike. Local source SHA-256: `77758f51fcd107dba862c09e136cd96b29be8b7306e6aac0d004dc04e908a9c2`, 197,677 bytes. It supports keeping power sockets, main-cluster diagnostics and Pod programming distinct.
+
+### What the official app actually says about a service-centre update
+
+The inspected app contains more than a generic service-centre string. Its Tripper updater has this static decision path:
+
+```text
+if available_firmware_version > installed_version:
+    if firmware_base_version > installed_version:
+        report ineligible; direct user to service centre
+    else:
+        report eligible for phone update
+else:
+    report no update available
+```
+
+Evidence: `classes5.dex`, `bluconnect.vh7.e`, entry `0x1f947c`, service message at `0x1f9502`; `vh7.w` at `0x1f8fd0`, `vh7.t` at `0x1f8f24`, shared numeric comparator `vh7.f/g` at `0x53e8cc`. The `RECloudInfo` constructor/getters and the `ccb$b$a` metadata mapping connect those values to `firmwareVersion` and `firmwareBaseVersion`. The comparator parses numeric doubles; the sketch above describes the successful comparison path, not malformed/null-input handling. This branch was not exercised with the Hunter connected.
+
+This establishes a minimum-base-version gate and an intended service-centre fallback. It does **not** reveal whether a technician uses a dealer app, a different BLE bootloader, an external connector, internal pads, replacement hardware or some combination. No original-Pod dealer update procedure, confirmed flashing tool or dealer connector pinout was recovered in the reviewed sources. Earlier rider comments merely suggested asking a service centre and are not evidence of a completed cable update.
+
+The public [NACS-II ROYAL user manual (2019)](https://royalenfield-service.com/RoyalEnfield/Home/downloads/5d955fe6-6cc4-4da7-af4b-17d05abf7ff2) has a relevant-looking firmware-upgrade chapter on printed pages 25-28. The steps target the NACS interface itself: PC USB connection, interface icon, and the interface's hardware button. Its diagnosis examples cover engine/ABS systems. This predates the Pod and does not document its flashing; absence from this old manual also cannot exclude later dealer support. A located [DOL cluster country-selection procedure](https://www.manualslib.com/manual/4078448/Royal-Enfield-Himalayan-Euro-V-2023.html?page=574) explicitly names Himalayan Tripper Dash, so it is not evidence for the small Hunter Pod.
+
+### USB and alternative interfaces checked
+
+- In the ten-DEX official APK, `UsbManager` appears in one generic Android system-service lookup table (`bluconnect.qu3$h`, `classes3.dex`, `0x2e4914`). No `UsbDevice`, `UsbDeviceConnection`, common USB-serial library or FTDI-package references were found. The six reviewed original-Pod connection/updater classes contain no Android USB API references. This bounded static result supports BLE as the identified phone-update transport; it does not inventory unpublished dealer software, reflection or every native library.
+- The likely KW36A-family candidate exposes SWD, LPUART, SPI and I2C in [NXP's datasheet](https://www.nxp.com/docs/en/data-sheet/MKW36A512.pdf). An [NXP employee's KW36 bootloader explanation](https://community.nxp.com/t5/Kinetis-Microcontrollers/MCUBOOT-for-KW36-MCU/td-p/805073) lists LPUART/I2C/SPI/CAN for NXP's flash-resident implementation. That does not establish that Visteon installed this implementation or enabled any of those transports. No native USB controller is listed for this candidate family; an external USB bridge would be a separate component and is not identified here.
+- The FCC test report's USB-to-TTL auxiliary equipment is a UART investigation lead. Its appearance in test equipment does not establish a customer-accessible UART, service flashing workflow or pinout.
+- The photographed `MICRO` clock/data pad group remains a more concrete physical lead than the charging socket, subject to part/revision identification, continuity checks and read-protection status.
+
+### What dealer evidence would resolve next
+
+The useful missing evidence is a demonstrated update of the **small `RE_DISP` Pod**: the actual tool/app name, firmware version before/after, and whether the technician uses Bluetooth or connects a cable directly to the Pod. If a cable is used, photographs of both ends and the connector it enters would distinguish it from the motorcycle diagnostic socket. A USB cable from a laptop into a diagnostic interface is not itself evidence of USB reaching the Pod.
+
+For UI work, prefer an original firmware file/backup and verified access to the Pod itself. Installing an official update alone would not establish acceptance of a modified image or provide a firmware read-back command. No port test, enumeration, wiring change or flashing was performed in this follow-up.
