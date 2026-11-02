@@ -27,7 +27,7 @@ class FieldReportStore(private val context: Context) {
     fun create(groups: List<FieldPlan.Group>, includeText: Boolean): String {
         val id = UUID.randomUUID().toString()
         folder(id).mkdirs()
-        save(id, JSONObject().put("schemaVersion", 1).put("id", id).put("appVersion", "0.5.0-experimental")
+        save(id, JSONObject().put("schemaVersion", 1).put("id", id).put("appVersion", BuildConfig.VERSION_NAME)
             .put("phoneModel", Build.MODEL).put("androidApi", Build.VERSION.SDK_INT).put("startedAt", Instant.now().toString())
             .put("drivingSide", prefs.getString("driving_side", "LEFT")).put("phase", "SCREENS").put("groups", JSONArray(groups.map { it.name })).put("includeMapsText", includeText)
             .put("runs", JSONArray()).put("mapsEvents", JSONArray()).put("livePhotos", JSONArray())

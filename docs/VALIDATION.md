@@ -1,5 +1,9 @@
 # OpenTripper validation
 
+## Android UI — 3 November 2026
+
+Version 0.6 redesigns the native app screens. [Build, emulator, camera, accessibility-layout and report-upgrade evidence](UI_VALIDATION_2026-11-03.md) records 66 passing core tests, zero lint errors and a verified APK. No Pixel installation or new Hunter test was performed for this UI pass.
+
 ## Hunter evidence update — 2 November 2026
 
 The user's completed one-visit hardware run was retrieved and visually reviewed: **33 accepted photos, zero skips, 138 successful writes**. See [the full result](HUNTER_RESULT_2026-11-02.md) for roundabout-number behavior, junction graphics, approach emphasis, night mode, distance units and the missing live Maps evidence. This is an evidence-only documentation change; no new APK, installation or build/test run is claimed. The dated implementation and phone-QA records below describe their original checks and limitations.

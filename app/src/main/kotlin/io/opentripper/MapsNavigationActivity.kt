@@ -37,50 +37,55 @@ class MapsNavigationActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val pad = (20 * resources.displayMetrics.density).toInt()
-        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad, pad, pad) }
-        val scroll = ScrollView(this).apply { addView(content) }; setContentView(scroll)
-        scroll.setOnApplyWindowInsetsListener { view, insets ->
-            @Suppress("DEPRECATION")
-            view.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
-            insets
+        val content = AppUi.page(this, "Maps to your Pod.", "Connect while parked, choose a route, then check your first direction.")
+        if (intent.getBooleanExtra("field", false)) {
+            AppUi.button(content, "Back to all checks", quiet = true) { finish() }
         }
-        fun text(value: String, size: Float = 16f) = TextView(this).apply {
-            text = value; textSize = size; setPadding(0, 12, 0, 12); content.addView(this)
-        }
-        fun button(label: String, action: () -> Unit) = Button(this).apply { text = label; setOnClickListener { action() }; content.addView(this) }
-        button(if (intent.getBooleanExtra("field", false)) "Back to all checks" else "Back") { finish() }
-        text("Maps → your Pod", 28f)
-        text("While parked: connect the Pod, open Google Maps and start a route. Return here to check the recognized direction before riding. English instructions only.")
-        status = text("Ready to connect", 20f)
-        instruction = text("Waiting for a direction", 23f)
-        source = text("")
-        text("Traffic side")
-        side = Spinner(this).apply {
-            contentDescription = "Maps traffic side"
-            adapter = ArrayAdapter(this@MapsNavigationActivity, android.R.layout.simple_spinner_dropdown_item, DrivingSide.entries.map { it.label })
-            setSelection(if (prefs.getString("driving_side", "LEFT") == "RIGHT") 1 else 0)
-            content.addView(this)
-        }
-        start = button("Connect Pod & forward Maps") {
+        val connection = AppUi.card(content)
+        AppUi.label(connection, "01  /  CONNECT")
+        status = AppUi.text(connection, "Ready to connect", 21f, bold = true)
+        start = AppUi.button(connection, "Connect my Pod", primary = true) {
             pendingStart = true; continueStart()
         }
-        candidates = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; content.addView(this) }
+        candidates = AppUi.column(this, connection)
         pin = EditText(this).apply {
-            hint = "PIN shown on Pod"; inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
-            isSaveEnabled = false; content.addView(this)
+            hint = "PIN shown on Pod"; contentDescription = "Pairing PIN shown on Pod"
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            isSaveEnabled = false; connection.addView(this); AppUi.styleInput(this)
         }
-        sendPin = button("Send PIN") { command("PIN") { putExtra("pin", pin.text.toString()) }; pin.text.clear() }
-        button("Open Google Maps / choose destination") {
+        sendPin = AppUi.button(connection, "Pair with this PIN") { command("PIN") { putExtra("pin", pin.text.toString()) }; pin.text.clear() }
+        AppUi.text(connection, "Keep the ignition on. Bluetooth and Maps notification access are requested when you connect.", 14f, secondary = true)
+        val route = AppUi.card(content)
+        AppUi.label(route, "02  /  CHOOSE YOUR ROUTE")
+        AppUi.text(route, "Where are you heading?", 22f, bold = true)
+        AppUi.text(route, "Start turn-by-turn navigation in Google Maps, then return here.", 14f, secondary = true)
+        AppUi.button(route, "Open Google Maps  ↗") {
             val maps = packageManager.getLaunchIntentForPackage(MapsParser.PACKAGE)
             if (maps != null) startActivity(maps) else Toast.makeText(this, "Install Google Maps to use this mode", Toast.LENGTH_LONG).show()
         }
-        button("Remember Pod — I saw the correct direction") { command("REMEMBER") }
-        button("Forget saved Pod") { command("FORGET") }
-        button("Stop navigation connection") { pendingStart = false; command("STOP") }
-        button("Notification access settings") { openNotificationSettings() }
-        text("OpenTripper reads Google Maps notifications. Android grants broad notification access; the app filters for Maps. Normal navigation saves no notification text; the test kit can save Maps wording if you enable its diagnostic option. No location or camera access is needed on Android 12+ for this mode.", 14f)
-        text("Your Hunter test verified seven screen commands. Maps interpretation is still experimental. Roundabouts stay disabled here until separately tested. Missing or old directions stop screen refresh; the Pod may disconnect, so reconnect while parked.", 14f)
+        val direction = AppUi.card(content, dark = true)
+        AppUi.label(direction, "03  /  YOUR DIRECTION").setTextColor(AppUi.color(this, R.color.hero_muted))
+        instruction = AppUi.text(direction, "Waiting for a direction", 29f, bold = true).apply {
+            setTextColor(AppUi.color(context, R.color.hero_ink))
+        }
+        source = AppUi.text(direction, "", 14f).apply { setTextColor(AppUi.color(context, R.color.hero_muted)) }
+        AppUi.text(content, "English directions only · experimental forwarding", 13f, secondary = true)
+        AppUi.label(content, "TRAFFIC SIDE")
+        side = Spinner(this).apply {
+            contentDescription = "Maps traffic side"
+            adapter = ArrayAdapter(this@MapsNavigationActivity, android.R.layout.simple_spinner_dropdown_item, DrivingSide.entries.map { it.label })
+            setSelection(savedInstanceState?.getInt("selectedSide") ?: if (prefs.getString("driving_side", "LEFT") == "RIGHT") 1 else 0)
+            content.addView(this); AppUi.styleSpinner(this)
+        }
+        AppUi.button(content, "Remember this Pod", quiet = true) { command("REMEMBER") }
+        AppUi.text(content, "Remember it once you have checked the direction on the physical display.", 13f, secondary = true)
+        AppUi.button(content, "Stop navigation", quiet = true, danger = true) { pendingStart = false; command("STOP") }
+        AppUi.disclosure(content, "Access, privacy & connection options") { options ->
+            AppUi.button(options, "Notification access settings") { openNotificationSettings() }
+            AppUi.button(options, "Forget saved Pod", quiet = true) { command("FORGET") }
+            AppUi.text(options, "Android grants broad notification access; OpenTripper filters for Google Maps. Normal navigation saves no notification text. The test kit saves wording only if you opt in.", 14f, secondary = true)
+            AppUi.text(options, "Turn shapes and display modes have been photographed on your Hunter. Live Maps interpretation still needs validation. Roundabouts stay off in this mode. Old or unreadable directions stop screen updates; reconnect while parked if the Pod disconnects.", 14f, secondary = true)
+        }
         pendingStart = savedInstanceState?.getBoolean("pendingStart") ?: false
         externalPending = savedInstanceState?.getBoolean("externalPending") ?: false
         render()
@@ -89,6 +94,7 @@ class MapsNavigationActivity : Activity() {
     override fun onResume() { super.onResume(); render() }
     override fun onStop() { AppState.listeners.remove(redraw); super.onStop() }
     override fun onSaveInstanceState(outState: Bundle) {
+        outState.putInt("selectedSide", side.selectedItemPosition)
         outState.putBoolean("pendingStart", pendingStart); outState.putBoolean("externalPending", externalPending)
         super.onSaveInstanceState(outState)
     }
@@ -161,13 +167,14 @@ class MapsNavigationActivity : Activity() {
         pin.visibility = if (waitingPin) View.VISIBLE else View.GONE; sendPin.visibility = pin.visibility
         start.isEnabled = !AppState.mapsConnecting
         side.isEnabled = AppState.onMapsPost == null || !prefs.getBoolean("forwarding", false)
-        status.text = AppState.status
+        status.text = if (AppState.sessionState == PodSession.State.STOPPED && AppState.onMapsPost == null) "Ready to connect" else AppState.status
+        start.text = if (AppState.mapsConnecting) "Connecting…" else if (AppState.sessionState == PodSession.State.READY) "Reconnect my Pod" else "Connect my Pod"
         val selectedSide = runCatching { DrivingSide.valueOf(prefs.getString("driving_side", "LEFT")!!) }.getOrDefault(DrivingSide.LEFT)
         instruction.text = AppState.navigation?.let { "${it.cue(selectedSide).label}\n${it.meters} m" } ?: "Waiting for a direction"
         source.text = when {
             !notificationAccess() -> "Setup needed: allow OpenTripper notification access."
             !AppState.observerConnected -> "Waiting for Android to connect the Maps notification reader."
-            AppState.onMapsPost == null -> "Tap Connect Pod & forward Maps to start."
+            AppState.onMapsPost == null -> "Tap Connect my Pod to start."
             else -> when (AppState.mapsStatus) {
                 MapsRoute.Status.WAITING -> "Reader connected. Open Maps and start turn-by-turn navigation. ${AppState.screenMessage}"
                 MapsRoute.Status.RECOGNIZED -> "Maps instruction recognized. ${AppState.screenMessage}"
@@ -179,9 +186,7 @@ class MapsNavigationActivity : Activity() {
         val choices = AppState.devices.takeIf { AppState.mapsChoosingPod } ?: emptyList()
         if (choices != renderedCandidates) {
             renderedCandidates = choices.toList(); candidates.removeAllViews()
-            choices.forEach { (address, _) -> candidates.addView(Button(this).apply {
-                text = "Use Pod $address"; setOnClickListener { command("MAPS_CONNECT") { putExtra("address", address) } }
-            }) }
+            choices.forEach { (address, _) -> AppUi.button(candidates, "Use Pod $address") { command("MAPS_CONNECT") { putExtra("address", address) } } }
         }
     }
     companion object { private const val PERMISSIONS = 41; private const val NOTIFICATION_ACCESS = 42; private const val ENABLE_BLUETOOTH = 43 }

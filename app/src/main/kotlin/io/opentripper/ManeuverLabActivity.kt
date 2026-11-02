@@ -2,9 +2,7 @@ package io.opentripper
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.InputType
@@ -54,35 +52,35 @@ class ManeuverLabActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(20), dp(20), dp(32))
-        }
-        val scroll = ScrollView(this).apply { addView(content) }
-        setContentView(scroll)
-        scroll.setOnApplyWindowInsetsListener { view, insets ->
-            @Suppress("DEPRECATION")
-            view.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop,
-                insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
-            insets
-        }
-        button(content, "Back to connection") { finish() }
-        text(content, "Maneuver lab", 30f)
-        text(content, "Stationary tests and manual route rehearsal. No GPS guidance.")
-        connection = text(content, "Connect your Pod to send a test", 16f)
-        val mode = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL; content.addView(this) }
-        val manualMode = RadioButton(this).apply { id = View.generateViewId(); text = "Manual icons"; mode.addView(this) }
-        val structuredMode = RadioButton(this).apply { id = View.generateViewId(); text = "Route preview"; mode.addView(this) }
+        content = AppUi.page(this, "Maneuver lab", "Try the Pod’s built-in screens while parked.")
+        val session = AppUi.card(content)
+        AppUi.label(session, "Pod connection")
+        connection = text(session, "Connect your Pod to send a test", 16f)
 
-        preview = text(content, "", 28f).apply {
-            gravity = Gravity.CENTER; setTextColor(Color.WHITE)
-            setPadding(dp(12), dp(16), dp(12), dp(16))
-            background = GradientDrawable().apply { setColor(Color.rgb(21, 30, 33)); cornerRadius = dp(24).toFloat() }
+        val previewCard = AppUi.card(content, dark = true)
+        text(previewCard, "SCREEN REHEARSAL", 12f).apply {
+            setTextColor(AppUi.color(this@ManeuverLabActivity, R.color.hero_muted)); letterSpacing = .12f
         }
-        text(content, "Phone schematic · Pod graphics need a hardware check", 13f)
-        description = text(content, "", 16f)
+        preview = text(previewCard, "", 30f).apply {
+            gravity = Gravity.CENTER
+            setTextColor(AppUi.color(this@ManeuverLabActivity, R.color.hero_ink))
+            setPadding(dp(12), dp(20), dp(12), dp(20))
+        }
+        text(previewCard, "Phone schematic · not the Pod’s actual rendering", 13f).apply {
+            setTextColor(AppUi.color(this@ManeuverLabActivity, R.color.hero_muted))
+        }
+        description = text(content, "", 15f)
 
+        AppUi.label(content, "Choose a test")
+        val mode = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL; content.addView(this) }
+        val manualMode = RadioButton(this).apply {
+            id = View.generateViewId(); text = "Manual icons"; AppUi.styleToggle(this); mode.addView(this)
+        }
+        val structuredMode = RadioButton(this).apply {
+            id = View.generateViewId(); text = "Route preview"; AppUi.styleToggle(this); mode.addView(this)
+        }
         manual = panel(content)
+        text(manual, "Build a maneuver", 22f)
         maneuver = spinner(manual, "Current maneuver", kinds.map { it.label })
         maneuver.setSelection(kinds.indexOf(Maneuver.FORK_RIGHT))
         exit = spinner(manual, "Roundabout exit", (1..9).map { "Exit $it" })
@@ -91,53 +89,56 @@ class ManeuverLabActivity : Activity() {
         side.setSelection(if (prefs.getString("driving_side", "LEFT") == "RIGHT") 1 else 0)
 
         routePanel = panel(content)
-        text(routePanel, "Structured route rehearsal", 22f)
-        text(routePanel, "OSRM supplies maneuver types and exit numbers. Step through a route manually; distance below is a test value, not distance from your location.")
+        text(routePanel, "Rehearse a route", 22f)
+        text(routePanel, "Step through the junction demo or import an OSRM route. This is a manual rehearsal, without GPS guidance.", 14f)
         button(routePanel, "Load junction demo") { loadDemo(); updateSteps(); render() }
-        button(routePanel, "Import OSRM JSON") {
+        button(routePanel, "Import OSRM JSON", quiet = true) {
             startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE); type = "*/*"
                 putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/json", "text/plain", "application/octet-stream"))
             }, IMPORT_ROUTE)
         }
-        routeDescription = text(routePanel, "")
+        routeDescription = text(routePanel, "", 14f)
         step = spinner(routePanel, "Selected route step", emptyList())
-        val stepControls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; routePanel.addView(this) }
-        button(stepControls, "Previous") { step.setSelection((step.selectedItemPosition - 1).coerceAtLeast(0)) }
+        val stepControls = AppUi.column(this, routePanel)
+        button(stepControls, "Previous step", quiet = true) { step.setSelection((step.selectedItemPosition - 1).coerceAtLeast(0)) }
         button(stepControls, "Next step") {
             route?.let { step.setSelection((step.selectedItemPosition + 1).coerceAtMost(it.steps.lastIndex)) }
         }
 
-        distance = spinner(content, "Test distance before maneuver", distances.map { "$it m" })
+        val appearance = AppUi.card(content)
+        text(appearance, "Distance & appearance", 22f)
+        distance = spinner(appearance, "Test distance before maneuver", distances.map { "$it m" })
         distance.setSelection(2)
-        night = toggle(content, "Night mode")
-        emphasis = toggle(content, "Experimental approach emphasis")
-        experimental = toggle(content, "Enable experimental icon tests")
-        text(content, "Roundabout exit codes and approach emphasis still need hardware checks. Other icons also remain unverified on your particular Pod.", 14f)
+        night = toggle(appearance, "Night mode")
+        emphasis = toggle(appearance, "Approach emphasis")
+        experimental = toggle(appearance, "Allow experimental screen commands")
+        text(appearance, "Hunter photos confirm night mode, staged emphasis and exit numbers 1–9 for left-hand traffic. Roundabouts retain one common arrow shape. Experimental commands still require your opt-in.", 14f)
 
-        send = button(content, "Send to Pod for 20 seconds") { sendProbe() }
-        button(content, "Stop screen test") {
+        send = button(content, "Send to Pod for 20 seconds", primary = true) { sendProbe() }
+        button(content, "Stop screen test", quiet = true) {
             if (AppState.onMapsPost != null) startService(Intent(this, PodService::class.java).setAction("STOP_PROBE"))
         }
-        text(content, "Sending a test pauses Maps forwarding. Ending it may let the Pod return to its clock by disconnecting; reconnect manually if needed.", 14f)
-        packet = text(content, "", 12f).apply { typeface = Typeface.MONOSPACE; visibility = View.GONE }
-        button(content, "Show / hide packet details") { packet.visibility = if (packet.visibility == View.GONE) View.VISIBLE else View.GONE }
+        text(content, "A test pauses Maps forwarding. Reconnect the Pod while parked if it returns to its clock afterward.", 14f)
+        AppUi.disclosure(content, "Packet details") { details ->
+            packet = text(details, "", 12f).apply { typeface = Typeface.MONOSPACE }
+        }
 
-        text(content, "What did your Pod show?", 22f)
-        text(content, "Record an observation after Android confirms a test write. A successful write alone does not verify the icon.", 14f)
+        AppUi.label(content, "Save an observation")
+        val evidence = AppUi.card(content)
+        text(evidence, "What did the Pod show?", 22f)
+        text(evidence, "After a confirmed write, record what you actually see. The app does not automatically grade the display.", 14f)
         firmware = EditText(this).apply {
             hint = "Pod firmware version (optional)"; inputType = InputType.TYPE_CLASS_TEXT
-            setSingleLine(true); setText(prefs.getString("lab_firmware", "")); content.addView(this)
+            setSingleLine(true); setText(prefs.getString("lab_firmware", "")); evidence.addView(this); AppUi.styleInput(this)
         }
-        notes = EditText(this).apply { hint = "Observation notes (optional)"; content.addView(this) }
-        val recordRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; content.addView(this) }
+        notes = EditText(this).apply { hint = "Observation notes (optional)"; evidence.addView(this); AppUi.styleInput(this) }
+        val recordRow = AppUi.column(this, evidence)
         listOf("Matches" to "matches", "Different" to "different", "Blank" to "blank").forEach { (label, outcome) ->
-            recordButtons.add(button(recordRow, label) { record(outcome) }.apply {
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            })
+            recordButtons.add(button(recordRow, label) { record(outcome) })
         }
-        observations = text(content, "")
-        button(content, "Export observation report") {
+        observations = text(evidence, "", 14f)
+        button(evidence, "Export observation report") {
             startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE); type = "application/json"
                 putExtra(Intent.EXTRA_TITLE, "OpenTripper-observations.json")
@@ -162,6 +163,16 @@ class ManeuverLabActivity : Activity() {
             }
         }
         listOf(night, emphasis, experimental).forEach { it.setOnCheckedChangeListener { _, _ -> if (ready) render() } }
+        savedInstanceState?.let { saved ->
+            listOf(maneuver, exit, next, side, distance).forEachIndexed { index, picker ->
+                picker.setSelection(saved.getInt("picker-$index", picker.selectedItemPosition).coerceIn(0, (picker.count - 1).coerceAtLeast(0)))
+            }
+            night.isChecked = saved.getBoolean("night")
+            emphasis.isChecked = saved.getBoolean("emphasis")
+            experimental.isChecked = saved.getBoolean("experimental")
+            firmware.setText(saved.getString("firmwareText", firmware.text.toString()))
+            notes.setText(saved.getString("notesText", ""))
+        }
         ready = true
         render()
     }
@@ -170,6 +181,10 @@ class ManeuverLabActivity : Activity() {
     override fun onStop() { AppState.listeners.remove(redraw); super.onStop() }
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putBoolean("routeMode", routeMode); outState.putInt("step", step.selectedItemPosition)
+        listOf(maneuver, exit, next, side, distance).forEachIndexed { index, picker -> outState.putInt("picker-$index", picker.selectedItemPosition) }
+        outState.putBoolean("night", night.isChecked); outState.putBoolean("emphasis", emphasis.isChecked)
+        outState.putBoolean("experimental", experimental.isChecked)
+        outState.putString("firmwareText", firmware.text.toString()); outState.putString("notesText", notes.text.toString())
         super.onSaveInstanceState(outState)
     }
     @Suppress("DEPRECATION")
@@ -262,7 +277,7 @@ class ManeuverLabActivity : Activity() {
         val all = readObservations()
         val rows = JSONArray()
         all.keys().forEach { rows.put(all.getJSONObject(it)) }
-        return JSONObject().put("schemaVersion", 1).put("appVersion", "0.5.0-experimental")
+        return JSONObject().put("schemaVersion", 1).put("appVersion", BuildConfig.VERSION_NAME)
             .put("exportedAt", Instant.now().toString()).put("phoneModel", Build.MODEL)
             .put("androidApi", Build.VERSION.SDK_INT).put("evidence", "User-reported visual observations; not automatic hardware verification")
             .put("observations", rows).toString(2)
@@ -316,23 +331,22 @@ class ManeuverLabActivity : Activity() {
         Maneuver.OFF_RAMP_LEFT -> "↖ ↑"; Maneuver.OFF_RAMP_RIGHT -> "↑ ↗"
         else -> if (cue.maneuver.name.endsWith("LEFT")) "←" else if (cue.maneuver.name.endsWith("RIGHT")) "→" else "↑"
     }
-    private fun panel(parent: LinearLayout) = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; parent.addView(this) }
-    private fun text(parent: LinearLayout, value: String, size: Float = 16f) = TextView(this).apply {
-        text = value; textSize = size; setPadding(0, dp(8), 0, dp(8)); parent.addView(this)
-    }
-    private fun button(parent: LinearLayout, value: String, action: () -> Unit) = Button(this).apply {
-        text = value; setOnClickListener { action() }; parent.addView(this)
-    }
+    private fun panel(parent: LinearLayout) = AppUi.card(parent)
+    private fun text(parent: LinearLayout, value: String, size: Float = 16f) =
+        AppUi.text(parent, value, size, secondary = size <= 15f, bold = size >= 22f)
+    private fun button(parent: LinearLayout, value: String, primary: Boolean = false, quiet: Boolean = false, action: () -> Unit) =
+        AppUi.button(parent, value, primary = primary, quiet = quiet, action = action)
     private fun spinner(parent: LinearLayout, label: String, values: List<String>): Spinner {
         val title = text(parent, label, 14f)
         return Spinner(this).apply {
             id = View.generateViewId(); title.labelFor = id; contentDescription = label
-            minimumHeight = dp(48)
             adapter = ArrayAdapter(this@ManeuverLabActivity, android.R.layout.simple_spinner_dropdown_item, values)
-            parent.addView(this)
+            parent.addView(this); AppUi.styleSpinner(this)
         }
     }
-    private fun toggle(parent: LinearLayout, label: String) = Switch(this).apply { text = label; minHeight = dp(48); parent.addView(this) }
+    private fun toggle(parent: LinearLayout, label: String) = Switch(this).apply {
+        text = label; AppUi.styleToggle(this); parent.addView(this)
+    }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
     private fun toast(message: String) { Toast.makeText(this, message, Toast.LENGTH_LONG).show() }
     companion object { private const val IMPORT_ROUTE = 10; private const val EXPORT_REPORT = 11 }

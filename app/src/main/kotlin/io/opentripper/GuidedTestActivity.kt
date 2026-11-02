@@ -33,6 +33,7 @@ class GuidedTestActivity : Activity() {
     private lateinit var experimental: Switch
     private lateinit var side: Spinner
     private lateinit var candidates: LinearLayout
+    private lateinit var configuration: LinearLayout
     private var renderedCandidates: List<Pair<String, String>>? = null
     private var pendingStart = false
     private var autoStart = false
@@ -44,59 +45,60 @@ class GuidedTestActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(32, 24, 32, 40) }
-        val scroll = ScrollView(this).apply { addView(content) }; setContentView(scroll)
-        scroll.setOnApplyWindowInsetsListener { view, insets ->
-            @Suppress("DEPRECATION")
-            view.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
-            insets
+        val content = AppUi.page(this, "Quick Pod check", "Seven familiar turns, photographed one at a time.")
+        val session = AppUi.card(content)
+        AppUi.label(session, "Current check")
+        status = AppUi.text(session, "Ready", 24f, bold = true).apply { accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE }
+        progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            progressTintList = android.content.res.ColorStateList.valueOf(AppUi.ink(context))
+            session.addView(this, LinearLayout.LayoutParams(-1, AppUi.dp(context, 8)).apply { bottomMargin = AppUi.dp(context, 16) })
         }
-        fun text(value: String, size: Float = 16f) = TextView(this).apply {
-            text = value; textSize = size; setPadding(0, 14, 0, 14); content.addView(this)
-        }
-        fun button(label: String, action: () -> Unit) = Button(this).apply {
-            text = label; setOnClickListener { action() }; content.addView(this)
-        }
-        button("Back to connection") { finish() }
-        text("Automatic Pod test", 28f)
-        text("Park the Hunter, turn the ignition on, then start. The app connects, holds each maneuver and asks for a photo. Accepting a photo advances to the next test.")
-        status = text("Ready", 20f)
-        progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { content.addView(this) }
-        instruction = text("7 photo checkpoints; allow about 2–4 minutes. First-time pairing needs the PIN shown on your Pod.", 18f)
-        photo = button("Photograph the Pod now") { openPhoto() }
-        skip = button("Skip this photo") {
+        instruction = AppUi.text(session, "Park the Hunter and turn the ignition on. Allow 2–4 minutes. First-time pairing needs the PIN shown on your Pod.", 16f, secondary = true)
+        photo = AppUi.button(session, "Photograph the Pod", primary = true) { openPhoto() }
+        skip = AppUi.button(session, "Skip this photo", quiet = true) {
             AppState.guidedRun?.current?.let { step -> command("GUIDE_SKIP") {
                 putExtra("run", AppState.guidedRunId); putExtra("step", step.id)
             } }
         }
-        stop = button("Stop test and save partial report") { command("GUIDE_CANCEL") }
         pin = EditText(this).apply {
-            hint = "PIN shown on Pod"; inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
-            isSaveEnabled = false; content.addView(this)
+            hint = "PIN shown on Pod"; contentDescription = "PIN shown on Pod"
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            isSaveEnabled = false; AppUi.styleInput(this); session.addView(this)
         }
-        pinButton = button("Send PIN and continue automatically") {
+        pinButton = AppUi.button(session, "Pair & continue", primary = true) {
             command("PIN") { putExtra("pin", pin.text.toString()) }; pin.text.clear()
         }
-        candidates = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; content.addView(this) }
-        text("Traffic side")
+        candidates = AppUi.column(this, session)
+        stop = AppUi.button(session, "Stop & save progress", quiet = true, danger = true) { command("GUIDE_CANCEL") }
+
+        configuration = AppUi.card(content)
+        AppUi.label(configuration, "Before you start")
+        AppUi.text(configuration, "A photo at every turn", 21f, bold = true)
+        AppUi.text(configuration, "The app holds a direction on the Pod until you accept its photo. Keep the bike parked throughout.", 14f, secondary = true)
+        AppUi.label(configuration, "Traffic side")
         side = Spinner(this).apply {
             contentDescription = "Guided test traffic side"
             adapter = ArrayAdapter(this@GuidedTestActivity, android.R.layout.simple_spinner_dropdown_item, DrivingSide.entries.map { it.label })
-            setSelection(if (prefs.getString("driving_side", "LEFT") == "RIGHT") 1 else 0); content.addView(this)
+            setSelection(savedInstanceState?.getInt("selectedSide") ?: if (prefs.getString("driving_side", "LEFT") == "RIGHT") 1 else 0)
+            AppUi.styleSpinner(this); configuration.addView(this)
         }
         experimental = Switch(this).apply {
-            text = "Include experimental roundabouts and approach emphasis"
-            minHeight = 120; content.addView(this)
+            text = "Add experimental checks"; contentDescription = "Add experimental roundabout and approach-highlighting checks"
+            isChecked = savedInstanceState?.getBoolean("experimentalChecks") ?: false
+            AppUi.styleToggle(this); configuration.addView(this)
         }
-        text("The standard run takes 7 photos. Experimental adds exits 1–3 and a near-turn emphasis test. These are screen commands, not a firmware update.")
-        start = button("Start automatic test") { startPressed() }
-        button("Check camera / allow camera permission") {
+        AppUi.text(configuration, "Adds roundabout exits 1–3 and approach highlighting: 11 photos in total.", 13f, secondary = true)
+        start = AppUi.button(configuration, "Start quick check", primary = true) { startPressed() }
+        AppUi.button(configuration, "Check camera permission", quiet = true) {
             startActivityForResult(Intent(this, PodCameraActivity::class.java).putExtra("check", true), CAMERA_CHECK)
         }
-        button("Remember Pod — I saw it respond") { command("REMEMBER") }
-        share = button("Share test report and photos") { shareReport() }
-        button("Open app permissions") { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) }
-        text("Photos and reports stay on this phone until you choose Share. Frame the Pod only. The report records transmission results; it does not automatically judge the display.", 14f)
+        AppUi.label(content, "Saved report")
+        share = AppUi.button(content, "Share report & photos") { shareReport() }
+        AppUi.disclosure(content, "Help & permissions") { help ->
+            AppUi.text(help, "Photos and reports stay on this phone until you choose Share. Frame the Pod only. The report records what was sent and photographed; it does not automatically judge the display.", 14f, secondary = true)
+            AppUi.button(help, "Remember Pod — I saw it respond") { command("REMEMBER") }
+            AppUi.button(help, "Open app permissions", quiet = true) { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))) }
+        }
         pendingStart = savedInstanceState?.getBoolean("pendingStart") ?: false
         autoStart = savedInstanceState == null && intent.getBooleanExtra("start", false)
         render()
@@ -108,7 +110,10 @@ class GuidedTestActivity : Activity() {
     override fun onStart() { super.onStart(); AppState.listeners.add(redraw); render() }
     override fun onStop() { AppState.listeners.remove(redraw); super.onStop() }
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putBoolean("pendingStart", pendingStart); super.onSaveInstanceState(outState)
+        outState.putBoolean("pendingStart", pendingStart)
+        outState.putInt("selectedSide", side.selectedItemPosition)
+        outState.putBoolean("experimentalChecks", experimental.isChecked)
+        super.onSaveInstanceState(outState)
     }
 
     private fun requiredPermissions(): List<String> = buildList {
@@ -154,12 +159,14 @@ class GuidedTestActivity : Activity() {
         val run = AppState.guidedRun
         val active = run != null && !run.terminal
         start.isEnabled = !active; side.isEnabled = !active; experimental.isEnabled = !active
+        configuration.visibility = if (active) View.GONE else View.VISIBLE
         stop.visibility = if (active) View.VISIBLE else View.GONE
         photo.visibility = if (run?.phase == GuidedRun.Phase.PHOTO_REQUIRED) View.VISIBLE else View.GONE
         skip.visibility = photo.visibility
         val needsPin = active && AppState.sessionState == io.opentripper.core.PodSession.State.WAITING_PIN
         pin.visibility = if (needsPin) View.VISIBLE else View.GONE; pinButton.visibility = pin.visibility
         progress.max = run?.steps?.size ?: 7; progress.progress = run?.index ?: 0
+        progress.contentDescription = "${progress.progress} of ${progress.max} screen checkpoints completed"
         share.isEnabled = !active && reports.latestId() != null
         if (run != null) {
             status.text = when (run.phase) {
@@ -187,9 +194,9 @@ class GuidedTestActivity : Activity() {
         val choices = AppState.devices.takeIf { AppState.guidedChoosingPod } ?: emptyList()
         if (choices != renderedCandidates) {
             renderedCandidates = choices.toList(); candidates.removeAllViews()
-            choices.forEach { (address, _) -> candidates.addView(Button(this).apply {
-                text = "Use Pod $address"; setOnClickListener { command("GUIDE_CONNECT") { putExtra("address", address) } }
-            }) }
+            choices.forEach { (address, _) -> AppUi.button(candidates, "Use Pod $address") {
+                command("GUIDE_CONNECT") { putExtra("address", address) }
+            } }
         }
     }
     private fun openPhoto() {

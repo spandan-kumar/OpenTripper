@@ -21,6 +21,11 @@ import java.util.UUID
 class FieldTestActivity : Activity() {
     private lateinit var status: TextView
     private lateinit var detail: TextView
+    private lateinit var progress: ProgressBar
+    private lateinit var selection: TextView
+    private lateinit var selectionDetail: TextView
+    private lateinit var configuration: LinearLayout
+    private lateinit var savedSession: LinearLayout
     private lateinit var groups: LinearLayout
     private lateinit var start: Button
     private lateinit var continueButton: Button
@@ -51,83 +56,113 @@ class FieldTestActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        val pad = (16 * resources.displayMetrics.density).toInt()
-        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad, pad, pad) }
-        val scroll = ScrollView(this).apply { addView(content) }; setContentView(scroll)
-        scroll.setOnApplyWindowInsetsListener { view, insets ->
-            @Suppress("DEPRECATION")
-            view.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop, insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
-            insets
+        val content = AppUi.page(this, "Pod check kit", "One session. Every screen. One report.")
+        val session = AppUi.card(content)
+        AppUi.label(session, "Current session")
+        status = AppUi.text(session, "Ready", 24f, bold = true).apply { accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE }
+        progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            progressTintList = android.content.res.ColorStateList.valueOf(AppUi.ink(context))
+            session.addView(this, LinearLayout.LayoutParams(-1, AppUi.dp(context, 8)).apply { bottomMargin = AppUi.dp(context, 16) })
         }
-        fun text(label: String, size: Float = 16f) = TextView(this).apply { text = label; textSize = size; setPadding(0, 12, 0, 12); content.addView(this) }
-        fun button(label: String, action: () -> Unit) = Button(this).apply { text = label; setOnClickListener { action() }; content.addView(this) }
-        button("Back") { finish() }
-        text("One-visit test kit", 28f)
-        text("Keep the Hunter parked. Run all selected screens, take the requested photos, then start a real Maps route once. Finish with one report. Allow 10–15 minutes for all new checks; you can choose fewer groups.")
-        status = text("Ready", 21f); detail = text("")
-        photo = button("Photograph this test screen") { openCheckPhoto() }
-        skip = button("Skip this photo and continue") { AppState.guidedRun?.current?.let { step -> command(Intent().setAction("GUIDE_SKIP").putExtra("run", AppState.guidedRunId).putExtra("step", step.id)) } }
-        stopChecks = button("Stop screen checks; keep partial evidence") { command(Intent().setAction("GUIDE_CANCEL")) }
-        pin = EditText(this).apply { hint = "PIN shown on Pod"; inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD; isSaveEnabled = false; content.addView(this) }
-        sendPin = button("Send PIN") { command(Intent().setAction("PIN").putExtra("pin", pin.text.toString())); pin.text.clear() }
-        devices = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; content.addView(this) }
-        groups = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; content.addView(this) }
-        FieldPlan.Group.entries.forEach { group -> boxes[group] = CheckBox(this).apply {
-            text = "${group.label} (${FieldPlan.steps(listOf(group), DrivingSide.LEFT).size} photos)"
-            id = when (group) {
-                FieldPlan.Group.ROUNDABOUTS -> R.id.field_group_roundabouts
-                FieldPlan.Group.JUNCTIONS -> R.id.field_group_junctions
-                FieldPlan.Group.DISPLAY -> R.id.field_group_display
-                FieldPlan.Group.MAPS_REPLAY -> R.id.field_group_maps_replay
-                FieldPlan.Group.BASELINE -> R.id.field_group_baseline
-            }; isChecked = group in FieldPlan.recommended; minHeight = 110; groups.addView(this)
-        } }
-        textOptIn = CheckBox(this).apply {
-            text = "Include Maps instruction text for debugging (may contain street/place names). Stored locally; included only when I share the ZIP."
-            id = R.id.field_text_optin; minHeight = 130; content.addView(this)
+        detail = AppUi.text(session, "", 15f, secondary = true)
+        photo = AppUi.button(session, "Photograph this screen", primary = true) { openCheckPhoto() }
+        skip = AppUi.button(session, "Skip this photo", quiet = true) { AppState.guidedRun?.current?.let { step -> command(Intent().setAction("GUIDE_SKIP").putExtra("run", AppState.guidedRunId).putExtra("step", step.id)) } }
+        pin = EditText(this).apply {
+            hint = "PIN shown on Pod"; contentDescription = "PIN shown on Pod"
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            isSaveEnabled = false; AppUi.styleInput(this); session.addView(this)
         }
-        text("Traffic side")
-        side = Spinner(this).apply {
-            id = R.id.field_side; contentDescription = "Field test traffic side"
-            adapter = ArrayAdapter(this@FieldTestActivity, android.R.layout.simple_spinner_dropdown_item, DrivingSide.entries.map { it.label })
-            setSelection(if (prefs.getString("driving_side", "LEFT") == "RIGHT") 1 else 0); content.addView(this)
-        }
-        text("Roundabout and approach-emphasis groups send experimental screen commands. Selecting them opts into those stationary tests. The previously photographed seven screens are unchecked.", 14f)
-        start = button("Start all selected checks") {
-            val selected = boxes.filterValues { it.isChecked }.keys
-            setup(Intent().setAction("FIELD_START").putStringArrayListExtra("groups", ArrayList(selected.map { it.name })).putExtra("includeText", textOptIn.isChecked))
-        }
-        continueButton = button("Continue only checks still missing photos") {
-            store.latestId()?.let { setup(Intent().setAction("FIELD_CONTINUE").putExtra("suite", it)) }
-        }
-        text("Retry just one group")
-        retryGroup = Spinner(this).apply {
-            id = R.id.field_retry; contentDescription = "Retry field test group"
-            adapter = ArrayAdapter(this@FieldTestActivity, android.R.layout.simple_spinner_dropdown_item, FieldPlan.Group.entries.map { it.label }); content.addView(this)
-        }
-        retry = button("Retry selected group; keep earlier evidence") {
-            store.latestId()?.let { setup(Intent().setAction("FIELD_RETRY").putExtra("suite", it).putExtra("group", FieldPlan.Group.entries[retryGroup.selectedItemPosition].name)) }
-        }
-        maps = button("Continue with live Google Maps") {
-            val id = store.latestId() ?: return@button
-            openMapsWhenReady = true
-            if (AppState.fieldSessionId != id) setup(Intent().setAction("FIELD_CONTINUE").putExtra("suite", id).putExtra("liveOnly", true))
-            else command(Intent().setAction("FIELD_MAPS"))
-        }
-        livePhoto = button("Photograph live Maps on the Pod") {
+        sendPin = AppUi.button(session, "Pair with Pod", primary = true) { command(Intent().setAction("PIN").putExtra("pin", pin.text.toString())); pin.text.clear() }
+        devices = AppUi.column(this, session)
+        stopChecks = AppUi.button(session, "Stop checks & save progress", quiet = true, danger = true) { command(Intent().setAction("GUIDE_CANCEL")) }
+        livePhoto = AppUi.button(session, "Photograph live navigation", primary = true) {
             val id = AppState.fieldSessionId ?: return@button
             val token = "maps-live-${UUID.randomUUID()}"
             AppState.fieldLivePhotoName = "photo-$token.jpg"
             startActivityForResult(Intent(this, PodCameraActivity::class.java).putExtra("live", true).putExtra("run", id).putExtra("step", token), LIVE_PHOTO)
         }
-        button("Remember Pod — I saw it respond") { command(Intent().setAction("REMEMBER")) }
-        finishButton = button("Finish session and save everything") { command(Intent().setAction("FIELD_FINISH")) }
-        share = button("Share one report with all tests & photos") { shareReport() }
-        text("Retries and partial runs stay in the same bundle. A restarted app can continue unphotographed checks; it reconnects rather than pretending the old connection survived. Sample Maps replay is synthetic; live Maps is recorded separately. No automatic visual pass/fail is claimed.", 14f)
+
+        configuration = AppUi.card(content)
+        AppUi.label(configuration, "Start a new check")
+        selection = AppUi.text(configuration, "33 photos · 4 groups", 21f, bold = true)
+        selectionDetail = AppUi.text(configuration, "", 14f, secondary = true)
+        start = AppUi.button(configuration, "Start selected checks", primary = true) {
+            val selected = boxes.filterValues { it.isChecked }.keys
+            setup(Intent().setAction("FIELD_START").putStringArrayListExtra("groups", ArrayList(selected.map { it.name })).putExtra("includeText", textOptIn.isChecked))
+        }
+        AppUi.disclosure(configuration, "Choose checks & preferences") { options ->
+            groups = AppUi.column(this, options)
+            FieldPlan.Group.entries.forEach { group -> boxes[group] = CheckBox(this).apply {
+                text = "${group.label} · ${FieldPlan.steps(listOf(group), DrivingSide.LEFT).size} photos"
+                id = when (group) {
+                    FieldPlan.Group.ROUNDABOUTS -> R.id.field_group_roundabouts
+                    FieldPlan.Group.JUNCTIONS -> R.id.field_group_junctions
+                    FieldPlan.Group.DISPLAY -> R.id.field_group_display
+                    FieldPlan.Group.MAPS_REPLAY -> R.id.field_group_maps_replay
+                    FieldPlan.Group.BASELINE -> R.id.field_group_baseline
+                }
+                isChecked = group in FieldPlan.recommended; AppUi.styleToggle(this); groups.addView(this)
+                setOnCheckedChangeListener { _, _ -> updateSelection() }
+            } }
+            AppUi.label(options, "Traffic side")
+            side = Spinner(this).apply {
+                id = R.id.field_side; contentDescription = "Field test traffic side"
+                adapter = ArrayAdapter(this@FieldTestActivity, android.R.layout.simple_spinner_dropdown_item, DrivingSide.entries.map { it.label })
+                setSelection(if (prefs.getString("driving_side", "LEFT") == "RIGHT") 1 else 0)
+                AppUi.styleSpinner(this); options.addView(this)
+            }
+            textOptIn = CheckBox(this).apply {
+                text = "Save Maps wording for debugging"
+                contentDescription = "Save Maps instruction text for debugging. May include street and place names."
+                id = R.id.field_text_optin; AppUi.styleToggle(this); options.addView(this)
+            }
+            AppUi.text(options, "Optional wording may contain street or place names. It stays on this phone and is included when you share the report.", 13f, secondary = true)
+        }
+
+        savedSession = AppUi.card(content)
+        AppUi.label(savedSession, "Saved evidence")
+        AppUi.text(savedSession, "Continue where you left off", 21f, bold = true)
+        AppUi.text(savedSession, "Earlier attempts and photos stay in the same bundle.", 14f, secondary = true)
+        share = AppUi.button(savedSession, "Share report & photos", primary = true) { shareReport() }
+        continueButton = AppUi.button(savedSession, "Continue missing photos") {
+            store.latestId()?.let { setup(Intent().setAction("FIELD_CONTINUE").putExtra("suite", it)) }
+        }
+        maps = AppUi.button(savedSession, "Continue with live Google Maps") {
+            val id = store.latestId() ?: return@button
+            openMapsWhenReady = true
+            if (AppState.fieldSessionId != id) setup(Intent().setAction("FIELD_CONTINUE").putExtra("suite", id).putExtra("liveOnly", true))
+            else command(Intent().setAction("FIELD_MAPS"))
+        }
+        finishButton = AppUi.button(savedSession, "Finish session & save", quiet = true) { command(Intent().setAction("FIELD_FINISH")) }
+        AppUi.disclosure(savedSession, "Retry a group") { retryOptions ->
+            retryGroup = Spinner(this).apply {
+                id = R.id.field_retry; contentDescription = "Retry field test group"
+                adapter = ArrayAdapter(this@FieldTestActivity, android.R.layout.simple_spinner_dropdown_item, FieldPlan.Group.entries.map { it.label })
+                AppUi.styleSpinner(this); retryOptions.addView(this)
+            }
+            retry = AppUi.button(retryOptions, "Retry selected group") {
+                store.latestId()?.let { setup(Intent().setAction("FIELD_RETRY").putExtra("suite", it).putExtra("group", FieldPlan.Group.entries[retryGroup.selectedItemPosition].name)) }
+            }
+        }
+        AppUi.disclosure(content, "About this check kit") { help ->
+            AppUi.text(help, "Accept each requested photo to advance. You can stop and continue missing photos later. Photos and reports stay on this phone until you choose Share.", 14f, secondary = true)
+            AppUi.text(help, "Maps sample replay uses example directions. Live Maps needs a real route. Completing a run saves evidence; it does not automatically judge the display.", 14f, secondary = true)
+            AppUi.button(help, "Remember Pod — I saw it respond") { command(Intent().setAction("REMEMBER")) }
+        }
         @Suppress("DEPRECATION")
         pending = savedInstanceState?.getParcelable("pending")
         openMapsWhenReady = savedInstanceState?.getBoolean("openMapsWhenReady") ?: false
+        updateSelection()
         render()
+    }
+    private fun updateSelection() {
+        val selected = boxes.filterValues { it.isChecked }.keys.toList()
+        val steps = FieldPlan.steps(selected, DrivingSide.LEFT)
+        selection.text = "${steps.size} photos · ${selected.size} groups"
+        selectionDetail.text = "Park the Hunter and turn the ignition on. " +
+            (if (steps.any { it.probe.experimental }) "Includes experimental roundabout or approach checks. " else "") +
+            "Allow 10–15 minutes for the full kit."
+        if (::start.isInitialized) start.isEnabled = selected.isNotEmpty() && AppState.fieldSessionId == null && AppState.guidedRun?.terminal != false
     }
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putParcelable("pending", pending); outState.putBoolean("openMapsWhenReady", openMapsWhenReady)
@@ -176,12 +211,24 @@ class FieldTestActivity : Activity() {
         val activeChecks = run?.terminal == false
         val live = own && AppState.fieldPhase == "LIVE_MAPS"
         status.text = when {
-            activeChecks -> "Screen ${run!!.index + 1} of ${run.steps.size} · ${run.phase}"
+            activeChecks -> "Screen ${run!!.index + 1} of ${run.steps.size} · " + when (run.phase) {
+                GuidedRun.Phase.CONNECTING -> "Connecting"
+                GuidedRun.Phase.SENDING -> "Sending"
+                GuidedRun.Phase.SETTLING -> "Hold steady"
+                GuidedRun.Phase.PHOTO_REQUIRED -> "Photo needed"
+                else -> "In progress"
+            }
             live -> "Live Maps check · ${AppState.status}"
             own -> "Partial checks saved · retry a group or continue with Maps"
             report != null -> "Saved session · ${report.optString("phase").lowercase()}"
-            else -> "Ready · 33 new photo checks selected"
+            else -> "Ready when you are"
         }
+        progress.visibility = if (run != null) View.VISIBLE else View.GONE
+        progress.max = run?.steps?.size ?: 33
+        progress.progress = run?.index ?: 0
+        progress.contentDescription = "${progress.progress} of ${progress.max} screen checks completed"
+        configuration.visibility = if (own) View.GONE else View.VISIBLE
+        savedSession.visibility = if (report != null || own) View.VISIBLE else View.GONE
         detail.text = if (activeChecks) "${run!!.current?.title}\n${AppState.status}" else if (live)
             "${AppState.navigation?.let { "${it.maneuver.label} · ${it.meters} m" } ?: "Open Maps and start a route while parked"}\n${AppState.mapsStatus} · ${AppState.screenMessage}"
         else "${report?.optJSONArray("runs")?.length() ?: 0} saved screen runs · ${report?.optJSONArray("livePhotos")?.length() ?: 0} live photos. Earlier attempts stay in the bundle."
@@ -193,7 +240,7 @@ class FieldTestActivity : Activity() {
         skip.visibility = photo.visibility; stopChecks.visibility = if (activeChecks) View.VISIBLE else View.GONE
         val waiting = own && AppState.sessionState == PodSession.State.WAITING_PIN
         pin.visibility = if (waiting) View.VISIBLE else View.GONE; sendPin.visibility = pin.visibility
-        start.isEnabled = !own && AppState.guidedRun?.terminal != false
+        start.isEnabled = !own && AppState.guidedRun?.terminal != false && boxes.values.any { it.isChecked }
         boxes.values.forEach { it.isEnabled = !own }; side.isEnabled = !own; textOptIn.isEnabled = !own
         continueButton.isEnabled = report != null && !activeChecks
         retry.isEnabled = report != null && !activeChecks
@@ -209,9 +256,9 @@ class FieldTestActivity : Activity() {
         val available = AppState.devices.takeIf { own && (AppState.guidedChoosingPod || AppState.mapsChoosingPod) } ?: emptyList()
         if (available != choices) {
             choices = available.toList(); devices.removeAllViews()
-            available.forEach { (address, _) -> devices.addView(Button(this).apply {
-                text = "Use Pod $address"; setOnClickListener { command(Intent().setAction(if (AppState.guidedChoosingPod) "GUIDE_CONNECT" else "MAPS_CONNECT").putExtra("address", address)) }
-            }) }
+            available.forEach { (address, _) -> AppUi.button(devices, "Use Pod $address") {
+                command(Intent().setAction(if (AppState.guidedChoosingPod) "GUIDE_CONNECT" else "MAPS_CONNECT").putExtra("address", address))
+            } }
         }
     }
     private fun openCheckPhoto() {

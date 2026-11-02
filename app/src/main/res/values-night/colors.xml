@@ -1,0 +1,13 @@
+<resources>
+    <color name="canvas">#101A16</color>
+    <color name="surface">#192720</color>
+    <color name="surface_alt">#25372C</color>
+    <color name="ink">#F0F4E9</color>
+    <color name="muted">#B3C2B4</color>
+    <color name="outline">#405045</color>
+    <color name="accent">#D4EE89</color>
+    <color name="on_accent">#1C2A14</color>
+    <color name="danger">#FFB4A4</color>
+    <color name="ripple">#30D4EE89</color>
+    <color name="control_outline">#768F7B</color>
+</resources>
