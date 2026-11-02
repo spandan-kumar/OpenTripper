@@ -1,0 +1,241 @@
+{
+  "reviewedAt": "2026-11-02",
+  "target": "Original small Hunter Tripper Pod / RE_DISP; JDCP filing comparator, actual board revision unverified",
+  "firmwareImageAcquired": false,
+  "modifiedFirmwareAccepted": null,
+  "connectedPodTestPerformed": false,
+  "runtime": {
+    "officialAppVersion": "10.1.23(45)",
+    "baseApkSha256": "d08478e8c564624503b440834a40499cd4acdc1c8572e49fe1b4830472ad37a4",
+    "flow": "Normal existing signed-in app: launch -> Navigation -> Manage Devices",
+    "metadataCollection": "RE_FOTA_TRIPPER",
+    "result": "PERMISSION_DENIED",
+    "firmwareAndMappingUrls": null,
+    "firmwareVersions": null,
+    "completedAuthMarkersInFocusedLog": 4,
+    "externalFilesDepth3Count": 0,
+    "externalCacheDepth4Files": [
+      "diskcache/map_cache.db",
+      "diskcache/map_cache.db-wal",
+      "diskcache/map_cache.db-shm"
+    ],
+    "downloadHistoryQuery": "Android shell denied ACCESS_ALL_DOWNLOADS; no further attempt"
+  },
+  "newApacArtifacts": [
+    {
+      "name": "apac-2.3.xapk",
+      "bytes": 46194812,
+      "sha256": "98fd6878c193ae65fc151217dacd99eff86ec1ffea6f14c9140a2c934afbaf3b"
+    },
+    {
+      "name": "com.apac.royalenfield.reprime.apk",
+      "bytes": 20719679,
+      "sha256": "05e61a2ea037affec90cafa93b44e68e61049e7ae8ae49372fd77641dd7b4fd5"
+    },
+    {
+      "name": "apac-3.0.apk",
+      "bytes": 120932512,
+      "sha256": "445479174a9228ab4e3a40fa93765d963703b075f470086f4855d63bf787e705"
+    }
+  ],
+  "publicMetadataRequests": [
+    {
+      "project": "apac-re-prime-prod",
+      "collection": "RE_FOTA_FULL",
+      "url": "https://firestore.googleapis.com/v1/projects/apac-re-prime-prod/databases/(default)/documents/RE_FOTA_FULL",
+      "httpStatus": 403,
+      "body": {
+        "error": {
+          "code": 403,
+          "message": "Missing or insufficient permissions.",
+          "status": "PERMISSION_DENIED"
+        }
+      }
+    },
+    {
+      "project": "apac-re-prime-prod",
+      "collection": "RE_FOTA_V2_1",
+      "url": "https://firestore.googleapis.com/v1/projects/apac-re-prime-prod/databases/(default)/documents/RE_FOTA_V2_1",
+      "httpStatus": 403,
+      "body": {
+        "error": {
+          "code": 403,
+          "message": "Missing or insufficient permissions.",
+          "status": "PERMISSION_DENIED"
+        }
+      }
+    },
+    {
+      "project": "re-prime-prod",
+      "collection": "RE_FOTA_FULL",
+      "httpStatus": 403,
+      "body": {
+        "error": {
+          "code": 403,
+          "message": "Missing or insufficient permissions.",
+          "status": "PERMISSION_DENIED"
+        }
+      }
+    },
+    {
+      "class": "eh.v0.s0",
+      "dex": "classes2.dex",
+      "methodOffset": "0x3d6c24",
+      "collectionStringOffset": "0x3d6c3c",
+      "project": "re-prime-prod",
+      "collection": "RE_FOTA_V2_1",
+      "httpStatus": 403,
+      "status": "PERMISSION_DENIED"
+    }
+  ],
+  "publicArchiveLookup": [
+    {
+      "pattern": "storage.googleapis.com/re-prime-prod.appspot.com/*firmware*",
+      "url": "https://web.archive.org/cdx/search/cdx?url=storage.googleapis.com%2Fre-prime-prod.appspot.com%2F%2Afirmware%2A&output=json&filter=statuscode%3A200&collapse=urlkey&fl=timestamp%2Coriginal%2Cmimetype%2Cstatuscode&limit=50",
+      "body": "[]\n"
+    },
+    {
+      "pattern": "firebasestorage.googleapis.com/v0/b/re-prime-prod.appspot.com/o/*firmware*",
+      "url": "https://web.archive.org/cdx/search/cdx?url=firebasestorage.googleapis.com%2Fv0%2Fb%2Fre-prime-prod.appspot.com%2Fo%2F%2Afirmware%2A&output=json&filter=statuscode%3A200&collapse=urlkey&fl=timestamp%2Coriginal%2Cmimetype%2Cstatuscode&limit=50",
+      "body": "[]\n"
+    },
+    {
+      "pattern": "storage.googleapis.com/apac-re-prime-prod.appspot.com/*firmware*",
+      "url": "https://web.archive.org/cdx/search/cdx?url=storage.googleapis.com%2Fapac-re-prime-prod.appspot.com%2F%2Afirmware%2A&output=json&filter=statuscode%3A200&collapse=urlkey&fl=timestamp%2Coriginal%2Cmimetype%2Cstatuscode&limit=50",
+      "body": "[]\n"
+    },
+    {
+      "pattern": "royalenfield.com/*tripper*.srec",
+      "url": "https://web.archive.org/cdx/search/cdx?url=royalenfield.com%2F%2Atripper%2A.srec&output=json&filter=statuscode%3A200&collapse=urlkey&fl=timestamp%2Coriginal%2Cmimetype%2Cstatuscode&limit=50",
+      "body": "[]\n"
+    }
+  ],
+  "staticFindings": [
+    {
+      "finding": "Custom-token sign-in Task awaited before success marker; auth check awaited before metadata query",
+      "dex": "classes8.dex",
+      "anchors": [
+        "tw6.m@0x20a158",
+        "rx6.r@0x215834",
+        "FirebaseAuth.G@0x2158ac",
+        "jgj.n@0x2158c4",
+        "tw6.e0 auth@0x20d418, query@0x20d43a"
+      ]
+    },
+    {
+      "finding": "Auth/Firestore built from same FirebaseApp and stored under same region key; runtime project identity unobserved",
+      "dex": "classes8.dex",
+      "anchors": [
+        "a07.e@0x218a9a-0x218b04",
+        "u4m.c@0x3b20b0",
+        "v4m.a@0x3b21cc"
+      ]
+    },
+    {
+      "finding": "DeviceInfo software version may default to12.10 when stored version missing; not a wire version observation",
+      "dex": "classes5.dex",
+      "anchors": [
+        "DeviceListFragment$i.onReceive@0x52e5dc",
+        "currentSoftwareVersion@0x52e654",
+        "fallback@0x52e696-0x52e69a"
+      ]
+    },
+    {
+      "finding": "Pod metadata checksum excluded from RECloudInfo and downloader has no additional request headers",
+      "anchors": [
+        "classes8 ccb$b$a@0x29953a-0x299616",
+        "classes5 RECloudInfo.<init>@0x529b64",
+        "classes5 vh7.h@0x1f952c"
+      ]
+    },
+    {
+      "finding": "Both current firmwaredownload direct callers pass KDASH, Nordic DFU traced to BluArmor",
+      "anchors": [
+        "classes8@0x475dcc",
+        "classes8@0x47e002",
+        "classes4 ded$c@0x3558bc",
+        "classes4 lde.<init>@0x38753c"
+      ]
+    },
+    {
+      "finding": "Base AppCheck SDK present; no direct app-level provider installation found, server enforcement unknown",
+      "anchors": [
+        "ix6.j/k APIs",
+        "fs4 SDK implementation",
+        "zero app callers identified in ten-DEX index"
+      ]
+    }
+  ],
+  "limitations": [
+    "No device-side authentication, signature or recovery behavior established.",
+    "Unauthenticated legacy denial does not establish behavior of a valid regional session.",
+    "Missing public firmware search results are bounded, not proof no image exists.",
+    "No account/region changes, additional APK installations, firmware writes or hardware probing.",
+    "REA JADX prerequisite unavailable; static APK observations used existing Android SDK tools."
+  ],
+  "otaCommandsSent": false,
+  "newIndiaArtifact": {
+    "package": "com.royalenfield.reprime",
+    "versionName": "7.9.6",
+    "versionCode": 71,
+    "archiveListedDate": "2023-03-24",
+    "bytes": 127934206,
+    "sha256": "3d1b033b13fb4f47b19a3a66d84d76de957fd7a29c390d16b772985cab9cd04a",
+    "source": "https://apkpure.net/royal-enfield-app/com.royalenfield.reprime/download/7.9.6",
+    "apkSignature": {
+      "v2": true,
+      "v3": true,
+      "sourceStamp": true,
+      "signerCertificateSha256": "8d624c6e4768b6b619ddd97f8d3216f94a7ad923e7d35af332ae0a0f6540f1cf",
+      "signerCertificateSha1": "c19d6501ddebe1fb91b1deb5492ee35efee334db"
+    },
+    "dex": [
+      {
+        "name": "classes.dex",
+        "sha256": "2503b4b2c01204c01a2face7615b5eb78fcde6e137c0451885ba07416cbf10c6",
+        "classDefinitions": 10175
+      },
+      {
+        "name": "classes2.dex",
+        "sha256": "40a92bf22cb9db4edbbdf1d188c2fb601a2fc598a341bc37f433eef0a4e9a56e",
+        "classDefinitions": 6062
+      },
+      {
+        "name": "classes3.dex",
+        "sha256": "c3c76329fcbd6aca5ebf9803f83a5368355b2a57822f5af5e61ad21a93ae629e",
+        "classDefinitions": 4688
+      }
+    ],
+    "assetRawMembers": 549,
+    "query": {
+      "class": "eh.v0.s0",
+      "dex": "classes2.dex",
+      "methodOffset": "0x3d6c24",
+      "collectionStringOffset": "0x3d6c3c",
+      "project": "re-prime-prod",
+      "collection": "RE_FOTA_V2_1",
+      "httpStatus": 403,
+      "status": "PERMISSION_DENIED"
+    }
+  },
+  "motologArtifact": {
+    "package": "in.satrujit.tripper_bridge",
+    "version": "1.3.0",
+    "versionCode": 25,
+    "bytes": 81190254,
+    "sha256": "7d1dfcbce4e5a9e2bbaf13cf11fdaa80890c26943268d0cf34b94e43e320aa11",
+    "source": "https://apkpure.net/motolog-bike-ride-companion/in.satrujit.tripper_bridge/download",
+    "installed": false,
+    "firmwareImageFound": false,
+    "apkMembersInspected": 4,
+    "assetsRawMembers": 34,
+    "nativeLibraries": 17,
+    "libappSha256": "f5eb240755c3f9cb202d008ade58549873078179395e18fab0b2237cce89d900",
+    "stringsOnly": {
+      "0x9039e": "Firmware update successful",
+      "0x10c4f2": "Flash init response",
+      "0xed704": "firmwareVersion"
+    },
+    "limit": "Compiled response vocabulary is not evidence of a reachable flasher, readback, shipped firmware or download URL."
+  }
+}

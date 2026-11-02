@@ -1,5 +1,7 @@
 # Stock Pod firmware and hardware investigation
 
+Latest follow-up: [2 November firmware acquisition](POD_FIRMWARE_ACQUISITION_2026-11-02.md) adds three historical app artifacts, another companion-artifact check, authentication/download-path refinements and a fresh current-app metadata failure. No firmware image has been acquired.
+
 31 October–1 November 2026. Continues [the UI research](POD_UI_RESEARCH.md). Target: original small Tripper Pod, not Tripper Dash. No replacement firmware or changed Pod layout has been built, installed or demonstrated. The latest work reconstructs [the OTA transfer protocol](POD_OTA_PROTOCOL.md), implements a tested [offline inspector/planner](../tools/README.md), and checks the current app and a legacy European package for firmware acquisition. The [dealer-tool inspection](#public-dealer-tool-found-and-inspected) does not establish small-Pod coverage.
 
 ## What the supplied internal photographs add
