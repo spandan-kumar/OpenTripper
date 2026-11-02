@@ -1,5 +1,9 @@
 # OpenTripper validation
 
+## Hunter evidence update — 2 November 2026
+
+The user's completed one-visit hardware run was retrieved and visually reviewed: **33 accepted photos, zero skips, 138 successful writes**. See [the full result](HUNTER_RESULT_2026-11-02.md) for roundabout-number behavior, junction graphics, approach emphasis, night mode, distance units and the missing live Maps evidence. This is an evidence-only documentation change; no new APK, installation or build/test run is claimed. The dated implementation and phone-QA records below describe their original checks and limitations.
+
 ## One-visit test kit — 31 October 2026
 
 Version `0.5.0-experimental` (code 5) bundles the remaining tests in one installation. Recommended selection: 33 new checkpoints (nine roundabouts, twelve other junction categories, nine display tests and three synthetic Maps-text replay cases). Repeating the seven photographed baseline screens is optional. Groups can be retried in the same session, or the user can continue only checks without accepted photos. The outer report retains every child attempt, Maps diagnostics and live photos in one ZIP. The kit uses a twenty-minute screen-run limit and thirty-minute outer-session limit; legacy standalone guided tests retain their ten-minute limit.

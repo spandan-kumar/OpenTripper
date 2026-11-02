@@ -5,9 +5,9 @@ Local workspace: `/Users/Spandan/github.com/spandan-kumar/OpenTripper`.
 The existing project was moved here on 25 October 2026; this continues the original starter.
 
 A Kotlin Android app for the Royal Enfield **Tripper Pod** advertising as `RE_DISP`.
-**Experimental. The standard seven-checkpoint run was completed on a Hunter Pod on 31 October 2026: photos show distinct turn/fork/exit/U-turn graphics and the small following-turn arrow. Roundabouts and live navigation remain unverified. Tripper Dash is unsupported.**
+**Experimental. Hunter photo tests confirm distinct turn/fork/exit/U-turn graphics, a small following-turn arrow, staged approach emphasis and night mode. The 33-checkpoint run on 2 November 2026 also confirms roundabout exit numbers 1–9, but all use the same roundabout arrow shape. Live navigation remains unverified. Tripper Dash is unsupported.**
 
-See [the actual Hunter hardware result](docs/HUNTER_RESULT_2026-10-31.md) for the observed graphics and remaining limits.
+See [the latest 33-photo Hunter result](docs/HUNTER_RESULT_2026-11-02.md) and [the earlier seven-photo result](docs/HUNTER_RESULT_2026-10-31.md) for observed graphics and remaining limits.
 See [Pod UI and firmware research](docs/POD_UI_RESEARCH.md) for what can change on the stock display, the official-app update leads, and the hardware-replacement alternative.
 The [deeper firmware investigation](docs/POD_FIRMWARE_INVESTIGATION.md) records the supplied board photographs, likely KW36A-family/debug-pad leads, updater trace and current firmware-acquisition blocker.
 The [reconstructed Pod OTA protocol](docs/POD_OTA_PROTOCOL.md) documents firmware framing, acknowledgements, block hashing and commit stages. The [offline firmware workbench](tools/README.md) validates local S-record files and simulates update packets. It has no device transport; no stock firmware image or modified-image acceptance has been demonstrated.

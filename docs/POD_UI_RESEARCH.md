@@ -8,11 +8,14 @@ Follow-up: [firmware and internal-photo findings](POD_FIRMWARE_INVESTIGATION.md)
 
 OpenTripper currently selects graphics and supplies values to the Pod's existing firmware over BLE. It does not upload a phone-rendered screen. Our seven actual Hunter photos demonstrate distinct ordinary, sharp, slight, fork, exit and U-turn graphics, including a separate following-turn arrow: see [hardware evidence](HUNTER_RESULT_2026-10-31.md).
 
+Update, 2 November 2026: [33 additional photographs](HUNTER_RESULT_2026-11-02.md) confirm more junction shapes, staged red/yellow approach emphasis, night mode and the 999 m / 1.0 km boundary. Roundabout exits 1–9 change the large exit number while retaining the same overall arrow shape. Live Maps remains unverified; its saved session contains only a waiting state.
+
 | Desired change | Current evidence | Status for this Hunter |
 |---|---|---|
-| Use more informative turn shapes | Photographs show distinct built-in graphics responding to our commands | Confirmed for the seven photographed checkpoints |
+| Use more informative turn shapes | Two photographed runs show distinct built-in turn, fork, exit and other maneuver categories | Confirmed for tested categories; left/right on-ramp shapes are not clearly distinct |
+| Show roundabout exit geometry | Exits 1–9 show different numbers with one common roundabout arrow | Exit numbers confirmed; varying exit angles not demonstrated |
 | Following-turn arrow | Separate small right arrow visible beside an exit | Confirmed for that combination |
-| Day/night appearance and approach emphasis | Documented command fields; bundled field kit exercises both | Not yet verified in this Hunter's photos |
+| Day/night appearance and approach emphasis | Photos show dark night mode, staged red shaft sections and a yellow arrow at 10 m | Confirmed for tested command values |
 | Bottom-line distance/time/ETA, clock or compass presentation | Documented predefined fields/screens | Upstream evidence only; not an arbitrary widget system |
 | Move/resize elements, new fonts, freely chosen colours, custom bitmaps or map | No drawing/upload command identified in the reviewed protocol or focused official-app navigation path | No demonstrated implementation on stock firmware |
 | Replace stock UI through modified firmware | Tripper-specific firmware metadata code exists in the official app; no matching firmware image or verified modified-image installation obtained | Research lead, not a working capability |
@@ -70,4 +73,4 @@ The local chat workspace retains `work/pod-ui-research/`: APKs, hashes/inventory
 3. Establish the update format, acceptance rules and a recoverable backup/restore procedure. A checksum field alone does not establish whether firmware is signed, encrypted or downgrade-protected.
 4. If software acquisition cannot provide an image, hardware identification/readout would require a separate physical investigation, preferably on a spare Pod. Chip, debug interface and read protection are currently unknown.
 
-For the current app, continue using the demonstrated maneuver distinctions and the already-installed one-visit field kit. Its remaining photos can establish roundabout shapes, night mode and approach emphasis. No additional app build/install was needed for this research. Custom screen layout, arbitrary graphics and stock firmware replacement remain unresolved; they should not be advertised as implemented.
+For the current app, continue using the demonstrated maneuver distinctions and the already-installed one-visit field kit. The 2 November photo review establishes the roundabout-number behavior, night mode and approach emphasis described above. Live Maps notification forwarding still needs evidence. No additional app build/install was needed for this research. Custom screen layout, arbitrary graphics and stock firmware replacement remain unresolved; they should not be advertised as implemented.
